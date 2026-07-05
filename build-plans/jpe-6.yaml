@@ -1,0 +1,81 @@
+slice: "6"
+title: Firm-wide Signal Capture
+workflow: signal-capture
+working_date: 2026-06-30
+tagline: The secure foundation that catches what matters across the firm.
+what_changes: >
+  Not a task run today — the foundation other workflows sit on. AI catches every
+  signal as it arrives (firm email, client inquiries, raise interest, ASX news,
+  meetings, internal notes), works out what each is and why it matters, files it
+  in one place and a folder per corporate client, gives a daily or live view of
+  the firm. Today signals never join up — ASX news in Iris/website, email in
+  personal Outlooks, holder data in Front Office, company materials scattered.
+  Only governance stays with JP — IT provider confirming access, AFSL/ASIC
+  decision on who sees what. Safe first version buildable now — ASX watch list +
+  client folders from supplied material, no email/system connection.
+steps:
+  - id: "1"
+    title: All the signals arriving across the firm
+    today: Emails, inquiries, raise interest, ASX news, meeting notes sit in separate places, never one.
+    with_ai: One secure capture layer reads each signal as it arrives, saves it, tags what it is and why it matters. Store is new; channels switch on as access approved.
+    states: [automate, access-to-confirm]
+  - id: "2"
+    title: ASX announcements
+    today: Iris live alerts (paid) or ASX website (not delayed).
+    with_ai: AI watches public ASX feed against watch list, reads each release, flags mattering and price-sensitivity. Same monitoring the client-update workflow uses.
+    states: [automate]
+  - id: "3"
+    title: Firm email
+    today: Per-person Outlook history, no shared firm store. JP held off connecting Outlook over privacy.
+    with_ai: Once approved, AI reads firm email into capture layer, read-only, works out why each item matters. Needs IT provider + AFSL sign-off; sending switched off.
+    states: [automate, access-to-confirm]
+  - id: "4"
+    title: Meetings and internal notes
+    today: Recording method unclear; fortnightly meeting happens, content destination open.
+    with_ai: AI captures meetings/calls, summarises, files into client folder and capture layer. First need to know how meetings are recorded today.
+    states: [automate, access-to-confirm]
+  - id: "5"
+    title: Holder and account data
+    today: Front Office by adviser code; daily sync; exports to spreadsheet. Source of truth.
+    with_ai: AI reads Front Office read-only for client/account context, tying signals to right holders and advisers.
+    states: [automate, access-to-confirm]
+  - id: "6"
+    title: A proven way into Front Office
+    today: Previous Power BI dashboard pulled brokerage by adviser code straight from Front Office — proves a programmatic route exists.
+    with_ai: Reuse that proven route for the signal view. Confirm dashboard status, who set it up, current terms (Morrison changed hands 2025).
+    states: [automate, access-to-confirm]
+  - id: "7"
+    title: A folder per corporate client
+    today: No single store per client; locations unclear.
+    with_ai: Folder/project per corporate client holds everything. Jason quote — "a corporate client folder or project for each client that has all of their announcements, all of the materials we've ever created about them, mandates."
+    states: [automate]
+  - id: "8"
+    title: What matters today
+    today: Leadership stays across things piece by piece; no single view.
+    with_ai: Daily or live brief from captured signals — new HNW inquiry, company update, raise interest, open action, client issue. Jason quote — "a really meaningful snapshot."
+    states: [automate]
+  - id: "9"
+    title: The IT and access check
+    today: IT provider (Adisyn, possibly switching) must confirm access and whether installed software blocks AI.
+    with_ai: Stays JP's decision. Build provides limited, logged connection design for IT sign-off.
+    states: [human, access-to-confirm]
+  - id: "10"
+    title: The AFSL and privacy decision
+    today: Under AFSL, JP decides third-party data access, declares supplier, sets who sees what.
+    with_ai: Stays JP's decision. Build gives controls — role-based visibility, read/surface log, retention limits, no automatic sending.
+    states: [human]
+step_counts: {automate: 8, access_to_confirm: 6, human_review: 0, human: 2}
+safety: >
+  Walled-off workspace seeing only capture store and client folders. Own limited
+  logins, read-only where possible, sending off. Connections out blocked by
+  default. Every read and surface logged for the AFSL declaration. Never sends,
+  posts or acts — hands signals to other workflows where a person reviews and sends.
+fits: >
+  Foundation for the other three areas. Same ASX watch list feeds updates and
+  social; client folders and Front Office context feed raise work; materials and
+  signals feed research and screening. Build safe first version early while
+  IT/AFSL conversations run in parallel.
+effort: >
+  Large — biggest of the workflows; size is in access and governance, not code.
+  Thin version (watch list + client folders, no system connection) is Medium and
+  can start before the gates clear.

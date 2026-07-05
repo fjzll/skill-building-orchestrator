@@ -1,0 +1,83 @@
+slice: "4"
+title: Desk Notes and Research-Style Reports
+working_date: 2026-06-30
+completeness: 6 of 8 confirmed · 0 working interpretation · 2 open
+flow_summary: >
+  Historically 5-6 page branded PDF desk notes for ASX companies at ~$5-10k,
+  taking weeks to a month, written by hand and refined with Toddy. Now a scalable
+  paid product — 4-5 companies asked in the last fortnight, would pay a few
+  thousand each; competitors East Coast Research (~$80k/report) and Next
+  Investors charge far more. Target — per-company source pack, thesis captured
+  via Nic's brain dump, train on prior JP notes + competitor examples + the
+  structured reference report template, draft (Max already made one AI-assisted
+  CPM draft), format to JP brand, de-AI pass, JP reviews and approves.
+steps:
+  - {id: "1", title: Company opportunity identified or requested, status: confirmed, who: Nic and Jason, billable: yes, load: judgement, note: Gateway Mining example at $5-10k; 4-5 asks in last fortnight}
+  - id: '2'
+    title: Source pack defined and gathered
+    status: open
+    who: adviser/analyst possibly Max
+    question: for one target company what exact files, links, notes go in?
+    load: reading
+  - id: '3'
+    title: JP thesis and judgement supplied
+    status: confirmed
+    who: mainly Nic
+    billable: 'yes'
+    load: judgement
+    note: angle, blue-sky, catalysts, why JP likes it; capture = voice/written brain dump turned into guiding principles; brain dump NOT yet delivered
+  - id: '4'
+    title: Prior reports reviewed as house style
+    status: confirmed
+    who: adviser/analyst + Transcend
+    billable: 'yes'
+    load: reading
+    note: PAA 2020 note held; East Coast Research, Next Investors, structured reference report template; editable source not located; which reports feed the skill to confirm
+  - id: '5'
+    title: Draft note written
+    status: confirmed
+    who: adviser/analyst; Max's AI-assisted CPM draft exists
+    billable: 'yes'
+    load: reading
+    note: old process manual, weeks with Toddy back-and-forth; want Max's draft + tools as starting point
+  - id: '6'
+    title: Formatted to branded template
+    status: open
+    who: adviser/analyst/support + Transcend testing
+    question: reference report editable source? Output — Word, PowerPoint, HTML-to-PDF, Claude Design?
+    load: mechanical
+    note: PAA PDF is target look; Codex equity-research plugins + Claude Design flagged; 0.5-1 day platform test budgeted
+  - id: '7'
+    title: De-AI and personalisation review
+    status: confirmed
+    who: reviewer who knows JP voice — Toddy (Andrew Todd) offered
+    billable: 'yes'
+    load: judgement
+    note: Toddy ex-writer of JP reports, now Bulls and Bears, edits AI output so it doesn't look AI (slangy first sentences); every-note? owner? what changes? to confirm
+  - id: '8'
+    title: JP reviews and approves
+    status: confirmed
+    who: leadership or authorised adviser
+    billable: 'yes'
+    load: judgement
+    note: JP supplies thesis, reviews factual claims and final quality
+handoffs:
+  - {from: JP leadership, to: Adviser/analyst, what: confirmed opportunity, status: confirmed}
+  - {from: Adviser/analyst, to: Drafting, what: source pack, status: open}
+  - {from: Nic, to: Drafting, what: thesis + guiding principles, status: confirmed}
+  - {from: Prior-reports review, to: Drafting, what: pattern + house style, status: confirmed}
+  - {from: Drafting, to: Formatting, what: draft note, status: confirmed}
+  - {from: Formatting, to: De-AI review, what: branded draft, status: open}
+  - {from: Toddy, to: JP final review, what: personalised draft, status: confirmed}
+open_items:
+  - {step: "2", what: source-pack contents per company, who: Jason/Nic}
+  - step: '3'
+    what: record the brain dump; best form (bullets, dictation, old report)?
+    who: Nic
+  - {step: "4", what: which prior JP reports + external examples feed the skill, who: Jason/Nic}
+  - {step: "5", what: Max's CPM draft and tools, who: Jason/Nic}
+  - {step: "6", what: editable template source + output platform, who: Jason/Nic}
+  - step: '7'
+    what: de-AI pass standard? owner? what does Toddy change?
+    who: Jason/Nic
+sources: [28-May transcript, 22-Jun part 1, 19-Jun PAA report, 03-Jun research note, 21-Jun Ash template note]

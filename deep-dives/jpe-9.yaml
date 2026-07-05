@@ -1,0 +1,102 @@
+slice: "9"
+title: Market Screening and Company Outreach
+working_date: 2026-06-30
+completeness: 8 of 10 confirmed · 0 working interpretation · 2 open
+evidence_note: Thin — JP described what the work should produce more than how it is done; screening mechanics are mostly open. Two branches share the screening front end — mandate outreach and trading ideas back to clients.
+flow_summary: >
+  Every fortnight leadership settles a thematic or trading idea (e.g. WA lithium
+  under $20m market cap with under $3m cash; placements now 25% below issue
+  price). A junior staffer finds fitting companies by hand, pulling cash from
+  each last quarterly. Jason/Nic strike out no-touch companies, track down MD
+  contacts one by one, write individual outreach under their own names asking
+  for a presentation, desk note as hook. Trading-idea branch routes back to
+  clients who traded those stocks. Manual means companies get missed.
+steps:
+  - id: "1"
+    title: Form the screening brief
+    status: confirmed
+    who: Jason, Nic, advisory team (fortnightly meeting)
+    billable: non-billable (business development)
+    load: judgement
+    note: '"we think there''s a thematic going on in the next few months"; brief examples — WA lithium <$20m mcap <$3m cash; placements 25% below issue'
+  - id: "2"
+    title: Hand brief to junior staff
+    status: confirmed
+    who: '"young guys in the office", not named'
+    billable: non-billable
+    load: mechanical
+    note: '"we currently get young guys in the office to manually do that, and maybe that would miss things"'
+  - id: "3"
+    title: Screen the ASX universe against filters
+    status: open
+    who: junior staff
+    load: reading
+    question: what do they actually open — terminal, ASX website, screener, manual list? Is full Iress the wanted source?
+    note: filters confirmed (mcap cap, sector/asset focus, low cash); tool unknown
+  - id: "4"
+    title: Pull cash from last quarterly per candidate
+    status: confirmed
+    who: junior staff
+    billable: non-billable
+    load: reading
+    note: cash "we can get off last quarterly"; retrieval route at scale unspecified
+  - id: "5"
+    title: Placement-discount scan (trading-idea branch)
+    status: open
+    who: junior staff or adviser
+    load: reading
+    question: source for placement price, issue date, current price; scheduled or ad hoc?
+    note: Nic calls it "an ASX search"; no platform named
+  - id: "6"
+    title: Compile candidate list
+    status: confirmed
+    who: junior staff
+    billable: non-billable
+    load: mechanical
+    note: goal — "pump out a list of companies that fit"
+  - id: "7"
+    title: JP vet and strike out
+    status: confirmed
+    who: Jason and Nic
+    billable: non-billable
+    load: judgement
+    note: '"there''d some companies that wouldn''t touch... these five suit... and then the email goes out"; exclusion rules open'
+  - id: "8"
+    title: Track down MD contact and email
+    status: confirmed
+    who: adviser or staffer, company by company
+    billable: non-billable
+    load: mechanical
+    note: '"quite clunky trying to track down company contact and a company email, and you have to do it individually"; sources a gap'
+  - id: "9"
+    title: Draft individual adviser outreach email
+    status: confirmed
+    who: Jason or Nic, under own name
+    billable: non-billable
+    load: reading
+    note: '"an individual email from myself... we''ve seen your company, we''re interested to hear more" — presentation ask, desk-note hook, via Outlook'
+  - id: "10"
+    title: Approve and send, or route trading idea to clients
+    status: confirmed
+    who: Jason or Nic; relationship adviser for trading ideas
+    load: judgement
+    note: trading idea "we can communicate back out to clients who have traded these before"; overlaps Slices 1-2; brokerage billability unknown
+handoffs:
+  - {from: JP leadership, to: Junior staff, what: screening brief + filters, status: confirmed}
+  - {from: Junior staff, to: Jason/Nic, what: compiled candidate list, status: confirmed}
+  - {from: Jason/Nic vetting, to: Adviser drafting, what: vetted shortlist, status: confirmed}
+  - {from: Adviser, to: Target company MD, what: individual outreach email, status: confirmed}
+  - {from: JP trading-idea branch, to: Relevant clients, what: buying-opportunity flag, status: open}
+open_items:
+  - {step: "3", what: market-data source and screening tool, who: Jason/Nic}
+  - step: 1,3
+    what: reusable screen library or fresh each fortnight?
+    who: Jason/Nic
+  - step: '4'
+    what: cash retrieval at scale — one quarterly at a time or feed?
+    who: Junior staff/Nic
+  - {step: "5", what: placement-discount scan data source and owner, who: Nic}
+  - {step: "7", what: standing exclusion rules — what makes a no-touch company, who: Jason/Nic}
+  - {step: "8,9", what: MD contact detail sources, who: Nic}
+  - {step: "10", what: outreach sign-off; how traded-before clients are identified, who: Jason/Nic}
+sources: [22-Jun kickoff part 1]

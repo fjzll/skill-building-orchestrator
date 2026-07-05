@@ -1,0 +1,13 @@
+Run the next grill session for the skill-orchestrator in this folder: {SUBJECT}.
+
+Follow docs/grill-protocol.md exactly. Seed yourself from analysis/facts.yaml,
+every entry in ledger/, and the relevant build-plans/ and deep-dives/ files.
+Form split hypotheses live from the facts and the ledger (cut at human gates,
+cut at shared foundations) — never present them as decisions. Use the grill-me
+skill: one question at a time, each with your recommended answer.
+
+Exit protocol: write the ledger entry (decisions, splits with the
+<client>-<workflow>-<skill> naming, assumptions tagged to Information Requests,
+conventions), get my approval on it, then create/update the workflow's proposal
+from proposals/TEMPLATE.md including the skills list in frontmatter
+(shared deps first) and set status: proposed.

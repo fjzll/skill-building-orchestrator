@@ -1,0 +1,100 @@
+slice: "6"
+title: Firm-wide Information Capture and Market/Client Signal Dashboard
+working_date: 2026-06-30
+completeness: 7 of 10 confirmed · 1 working interpretation · 2 open
+evidence_note: Foundation capability, not an existing workflow. The daily signal view and per-client folders are future concepts from the kickoff ("super app"), not current process. JP may switch IT provider away from Adisyn.
+flow_summary: >
+  How information moves through the firm today — signals sit in several
+  unconnected places: Outlook per person, Iris/ASX alerts, Front Office
+  (source of truth, daily sync, CSV export, API precedent via a retired
+  Power BI brokerage dashboard), meetings and conversations. Leadership
+  awareness builds piece by piece with no consolidated view. Any capture
+  build is gated by the Adisyn IT/AI-blocking check and the AFSL 512529 /
+  ASIC / privacy declaration.
+steps:
+  - id: "1"
+    title: Information arrives across the firm
+    status: confirmed
+    who: leadership, advisers, trading desk, office support
+    load: monitoring
+    note: emails, inquiries, raise interest, ASX announcements, meetings, notes — in multiple unconnected systems
+  - id: "2"
+    title: Market signals via ASX alerts
+    status: confirmed
+    who: adviser
+    load: monitoring
+    note: Iris live alerts (paid add-on), ASX website not delayed; feeds Slices 1 and 7
+  - id: "3"
+    title: Email lands in individual Outlook inboxes
+    status: confirmed
+    who: each staff member
+    load: mechanical
+    question: any shared or central access to firm email today, or per-mailbox only?
+    note: Grok offered an Outlook connection; JP declined over privacy
+  - id: "4"
+    title: Meeting and internal-note capture today
+    status: open
+    who: unknown
+    question: how are meetings, calls, decisions recorded, if at all, and where would the record live?
+    note: fortnightly meeting confirmed; recording method not; Fathom/recorder is Transcend's practice, not JP's
+  - id: "5"
+    title: Holder/contact/account data in Front Office
+    status: confirmed
+    who: adviser or support
+    load: reading
+    note: source of truth, by adviser code, CSV export, daily sync; downstream into Complii
+  - id: "6"
+    title: Front Office API precedent (retired Power BI dashboard)
+    status: confirmed
+    who: JP + whoever set it up
+    load: mechanical
+    question: still running? who set up the API connection? exact route?
+    note: brokerage by adviser code on a TV in the office — proves programmatic access is possible; Morrison changed hands 2025
+  - id: "7"
+    title: Per-corporate-client materials storage today
+    status: open
+    who: unknown
+    question: where do announcements, materials, mandates sit today — shared drive, Complii, individual machines?
+    note: folder-per-client is a future "super app" concept, not current
+  - id: "8"
+    title: Signals reach leadership today
+    status: working-interpretation
+    who: Jason and Nic
+    load: judgement
+    question: how do you stay across inquiries/updates/raise interest; what do you find out too late?
+    note: ad hoc via inboxes, conversations, fortnightly meeting; consolidated snapshot is the stated goal, so not in place
+  - id: "9"
+    title: IT access and AI-blocking check via Adisyn
+    status: confirmed
+    who: leadership with Adisyn (ex-Attained)
+    load: judgement
+    question: Adisyn contact intro; M365 access model; does installed software block AI; switching provider first?
+    note: 28-May — Adisyn raised privacy/ASIC concerns re Outlook-Grok; JP unhappy, may switch
+  - id: "10"
+    title: AFSL, ASIC and privacy governance gate
+    status: confirmed
+    who: leadership under AFSL 512529
+    load: judgement
+    question: what does compliance require before third-party client-data access; who signs off; retention rules; audit log needed?
+    note: cyber-insured; third-party supplier declaration required; gates everything in this slice
+handoffs:
+  - {from: ASX/trading platform, to: Adviser, what: announcement alert, status: confirmed}
+  - {from: Inbound email, to: Individual Outlook, what: client and company email, status: confirmed}
+  - {from: Meetings, to: Unknown store, what: notes and decisions, status: open}
+  - {from: Front Office, to: Adviser/Complii, what: holder/contact/account data, status: confirmed}
+  - {from: Front Office API, to: Power BI dashboard, what: brokerage by adviser code, status: confirmed}
+  - {from: Company materials, to: Unknown store, what: announcements/materials/mandates, status: open}
+  - {from: Scattered channels, to: Leadership, what: what matters today, status: working-interpretation}
+  - {from: JP leadership, to: Adisyn, what: AI connection request, status: confirmed}
+  - {from: JP leadership, to: Compliance declaration, what: client-data access decision, status: confirmed}
+open_items:
+  - {step: "3", what: central email access or per-mailbox only, who: Jason}
+  - {step: "4", what: meeting/note capture method, who: Jason/Nic}
+  - {step: "6", what: Power BI dashboard status + API route, who: Jason}
+  - {step: "7", what: where corporate-client materials live, who: Jason}
+  - {step: "8", what: how leadership stays across signals; found-out-too-late cases, who: Jason/Nic}
+  - {step: "9", what: M365 access model; AI-blocking software; provider switch, who: Jason/Adisyn}
+  - {step: "9", what: role-based visibility — who sees what, who: Jason}
+  - {step: "10", what: third-party-supplier declaration + approval path, who: Jason}
+  - {step: "10", what: data-retention and audit-log rules, who: Jason}
+sources: [28-May audit meeting, 22-Jun kickoff parts 1 and 2, working map]

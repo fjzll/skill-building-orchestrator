@@ -1,0 +1,82 @@
+slice: "9"
+title: Market Screening and Company Outreach
+workflow: market-screening
+working_date: 2026-06-30
+tagline: The fortnightly thematic hunt — screen, list, contacts, outreach drafts in one run.
+what_changes: >
+  Today a junior staffer hand-hunts the ASX against a thematic from the
+  fortnightly meeting, reading cash off quarterlies, then Jason/Nic strike out
+  no-go companies and chase MD emails one at a time. AI runs it as one chain —
+  brief like "WA lithium under $20m market cap with under $3m cash" to filters,
+  screen against a market-data source, pull cash from quarterlies, ranked list
+  with evidence, contact research per kept company, personal outreach draft under
+  the adviser's name with the desk note as hook. Two things stay JP's — final
+  approval of the list against no-touch companies, and the send.
+steps:
+  - id: "1"
+    title: Form the screening brief
+    today: Leadership decides thematic or trading idea in fortnightly meeting, sets criteria.
+    with_ai: AI keeps reusable screen library, turns plain-English brief into structured filters. Thematic choice stays JP's. Library is a proposed idea to confirm.
+    states: [automate]
+  - id: "2"
+    title: Hand the brief to junior staff
+    today: Handed to younger staff to research by hand — may miss companies.
+    with_ai: Structured brief feeds straight into the screening run; manual handoff disappears.
+    states: [automate]
+  - id: "3"
+    title: Search the ASX universe
+    today: Staffer searches against market-cap, sector, cash filters; tool unconfirmed.
+    with_ai: 'AI runs screen programmatically. Access — source decision: existing Iress licence or licensed market-data feed. Main open question of the slice.'
+    states: [automate, access-to-confirm]
+  - id: "4"
+    title: Read cash from the last quarterly
+    today: Cash read from each candidate's most recent quarterly. "We can get off last quarterly."
+    with_ai: AI fetches each latest quarterly from public ASX announcements, reads the cash figure.
+    states: [automate]
+  - id: "5"
+    title: Scan for placement discounts
+    today: For trading ideas — recent placements trading ~25% below placement price. Method unconfirmed.
+    with_ai: AI assembles recent placements + current price, flags those below issue price by set percentage. Access — built from public announcements + price data; no ready-made feed.
+    states: [automate, access-to-confirm]
+  - id: "6"
+    title: Compile the candidate list
+    today: Matching companies pulled together by hand. Goal — "pump out a list of companies that fit."
+    with_ai: AI compiles ranked list with market cap, sector, cash and source beside each name.
+    states: [automate]
+  - id: "7"
+    title: Vet and strike out companies
+    today: Jason and Nic remove companies they would not approach. "These five suit... and then the email goes out."
+    with_ai: AI pre-applies known exclusion rules, flags likely strikes; JP makes final call. The one review gate before outreach. Gap — exclusion rules to capture.
+    states: [human-review]
+  - id: "8"
+    title: Track down the MD contact
+    today: One company at a time — "quite clunky... you don't really know where to start."
+    with_ai: AI researches MD and contact from announcements and company site, returns with confidence flag and source, never guesses an email. Person confirms before use.
+    states: [automate, access-to-confirm]
+  - id: "9"
+    title: Write the outreach email
+    today: Jason or Nic write individual email under own name — introduce JP, ask for presentation, offer desk note.
+    with_ai: AI drafts personal outreach for the named adviser in JP voice with desk-note hook. Stays a draft. Same JP-voice work as client updates.
+    states: [automate]
+  - id: "10"
+    title: Approve and send, or route to clients
+    today: Adviser approves and sends. Trading ideas go to clients who traded the stock before.
+    with_ai: Draft left in Drafts for JP to send. Trading ideas — AI prepares note and traded-the-stock client list, hands into client-update workflow. Access — Front Office for traded-stock clients.
+    states: [human, access-to-confirm]
+step_counts: {automate: 8, access_to_confirm: 4, human_review: 1, human: 1}
+data_access:
+  - {source: ASX universe screen, route: Iress licence or licensed feed with screener; no free public ASX screener, confidence: access-to-confirm}
+  - {source: Cash from quarterlies, route: public ASX announcements, confidence: access-to-confirm}
+  - {source: Placements and price, route: public announcements + price vs issue price, assembled, confidence: access-to-confirm}
+  - {source: MD contact details, route: per-company research with confidence flag + human check, confidence: access-to-confirm}
+  - source: Clients who traded a stock
+    route: Front Office, least-privilege with audit trail
+    confidence: access-to-confirm
+fits: >
+  Research and marketing engine. Trading-idea branch feeds client updates;
+  market-data source and adviser-voice drafting reused across client and raise
+  work. Stops at drafted outreach and compiled list.
+effort: >
+  Medium to Large. List-building half buildable once a market-data source is
+  chosen. Lifted by the live data source and licence decision, cash-pulling at
+  scale, per-company contact research. Below full capital-raise workflow.

@@ -1,0 +1,478 @@
+client:
+  code: JPE
+  name: JP Equity Partners
+generated_by: facts_extractor.py (deterministic; no hypotheses)
+workflows:
+- id: client-communications
+  name: Client updates and social branch
+  slices:
+  - '1'
+  - '2'
+  - '7'
+  shared_slice_deps: []
+  decision_lens_rank: 1
+  human_gates:
+  - slice: '1'
+    step: '8'
+    title: Approving and sending
+    states:
+    - human-review
+    - human
+  - slice: '7'
+    step: '4'
+    title: Approve the wording
+    states:
+    - human-review
+  - slice: '7'
+    step: '5'
+    title: Post to X and LinkedIn
+    states:
+    - access-to-confirm
+    - human
+  access_to_confirm:
+  - slice: '1'
+    step: 3-4
+    title: Building the recipient list
+  - slice: '1'
+    step: '7'
+    title: Staging the send
+  - slice: '1'
+    step: '9'
+    title: Checking it got through
+  - slice: '2'
+    step: '2'
+    title: Open Front Office
+  - slice: '2'
+    step: '3'
+    title: Pull holders for stock and code
+  - slice: '2'
+    step: '8'
+    title: Decide whether Complii C accounts belong
+  - slice: '7'
+    step: '5'
+    title: Post to X and LinkedIn
+  open_items:
+  - slice: '7'
+    q: What tips an announcement over the line for a public post beyond paying client and big announcement?
+    who: Jason
+  - slice: '7'
+    q: What does a good JP post contain? Share three or four best recent posts.
+    who: Jason / Nic
+  - slice: '7'
+    q: Who drafts, approves and publishes today, through what tool?
+    who: Jason / office
+  - slice: '7'
+    q: Who holds X and LinkedIn logins; one-click publishing or copy-paste?
+    who: Jason / office
+  ai_segments:
+  - slice: '1'
+    steps:
+    - '0'
+    - '1'
+    - '2'
+    - 3-4
+    - '5'
+    - '6'
+    - '7'
+  - slice: '1'
+    steps:
+    - '9'
+  - slice: '2'
+    steps:
+    - '1'
+    - '2'
+    - '3'
+    - '4'
+    - '5'
+    - '6'
+    - '7'
+    - '8'
+    - '9'
+    - '10'
+  - slice: '7'
+    steps:
+    - '1'
+    - '2'
+    - '3'
+- id: capital-raise
+  name: Capital raise operating layer
+  slices:
+  - '3'
+  - 3a
+  - '8'
+  shared_slice_deps:
+  - '2'
+  decision_lens_rank: 2
+  human_gates:
+  - slice: '3'
+    step: '1'
+    title: Win the mandate and agree the terms
+    states:
+    - human
+  - slice: '3'
+    step: '9'
+    title: Investors bid
+    states:
+    - human
+  - slice: '3'
+    step: '11'
+    title: Close the offer and scale back
+    states:
+    - human
+  - slice: '3'
+    step: '12'
+    title: Set up accounts for new bidders
+    states:
+    - human
+  - slice: 3a
+    step: '8'
+    title: Price and discounts set
+    states:
+    - human
+  - slice: 3a
+    step: '12'
+    title: Final check before use
+    states:
+    - human-review
+  - slice: '8'
+    step: '7'
+    title: Answering the questions
+    states:
+    - automate
+    - human
+  - slice: '8'
+    step: '8'
+    title: The book closes and moves to scale-back
+    states:
+    - human-review
+  access_to_confirm:
+  - slice: '3'
+    step: '3'
+    title: Set up the deal in Complii
+  - slice: 3a
+    step: '7'
+    title: Ten-day VWAP and last close
+  - slice: 3a
+    step: '9'
+    title: The capital-structure maths
+  - slice: 3a
+    step: '13'
+    title: Deal text formatted for Complii
+  - slice: '8'
+    step: '1'
+    title: The deal email and SMS go out
+  - slice: '8'
+    step: '2'
+    title: Bids land in the Complii book
+  - slice: '8'
+    step: '3'
+    title: Client questions arrive in the inbox
+  - slice: '8'
+    step: '6'
+    title: Who normally bids but hasn't?
+  open_items:
+  - slice: '8'
+    q: How do you work out who normally bids but has not come in, and where does that knowledge live?
+    who: Jason, Nic
+  - slice: '8'
+    q: Anywhere today showing per deal who was emailed / asked / called / bid in one place?
+    who: Jason, Nic
+  - slice: '8'
+    q: Whose inbox would AI read; what do IT and compliance need first?
+    who: Jason, IT, compliance
+  - slice: '8'
+    q: Which replies flagged vs noise?
+    who: Jason, Nic
+  - slice: '8'
+    q: Where do call recordings live; could phone follow-ups feed tracking?
+    who: Jason
+  - slice: '8'
+    q: Per-adviser view or one shared deal-book view?
+    who: Jason, Nic
+  ai_segments:
+  - slice: '3'
+    steps:
+    - '2'
+    - '3'
+    - '4'
+    - '5'
+    - '6'
+    - '7'
+    - '8'
+  - slice: '3'
+    steps:
+    - '10'
+  - slice: '3'
+    steps:
+    - '13'
+  - slice: 3a
+    steps:
+    - '1'
+    - '2'
+    - '3'
+    - '4'
+    - '5'
+    - '6'
+    - '7'
+  - slice: 3a
+    steps:
+    - '9'
+    - '10'
+    - '11'
+  - slice: 3a
+    steps:
+    - '13'
+  - slice: '8'
+    steps:
+    - '1'
+    - '2'
+    - '3'
+    - '4'
+    - '5'
+    - '6'
+- id: desk-notes
+  name: Desk-note production
+  slices:
+  - '4'
+  shared_slice_deps: []
+  decision_lens_rank: 3
+  human_gates:
+  - slice: '4'
+    step: '8'
+    title: JP signs off and issues
+    states:
+    - human-review
+    - human
+  access_to_confirm:
+  - slice: '4'
+    step: '2'
+    title: Source pack gathered
+  - slice: '4'
+    step: '6'
+    title: Formatted into JP style
+  open_items: []
+  ai_segments:
+  - slice: '4'
+    steps:
+    - '1'
+    - '2'
+    - '3'
+    - '4'
+    - '5'
+    - '6'
+    - '7'
+- id: market-screening
+  name: Market screening and outreach
+  slices:
+  - '9'
+  shared_slice_deps: []
+  decision_lens_rank: 4
+  human_gates:
+  - slice: '9'
+    step: '7'
+    title: Vet and strike out companies
+    states:
+    - human-review
+  - slice: '9'
+    step: '10'
+    title: Approve and send, or route to clients
+    states:
+    - human
+    - access-to-confirm
+  access_to_confirm:
+  - slice: '9'
+    step: '3'
+    title: Search the ASX universe
+  - slice: '9'
+    step: '5'
+    title: Scan for placement discounts
+  - slice: '9'
+    step: '8'
+    title: Track down the MD contact
+  - slice: '9'
+    step: '10'
+    title: Approve and send, or route to clients
+  open_items: []
+  ai_segments:
+  - slice: '9'
+    steps:
+    - '1'
+    - '2'
+    - '3'
+    - '4'
+    - '5'
+    - '6'
+  - slice: '9'
+    steps:
+    - '8'
+    - '9'
+- id: events-marketing
+  name: Event and invitation production
+  slices:
+  - '5'
+  shared_slice_deps: []
+  decision_lens_rank: 5
+  human_gates:
+  - slice: '5'
+    step: '5'
+    title: Sign-off
+    states:
+    - automate
+    - human-review
+  - slice: '5'
+    step: '6'
+    title: Distribution
+    states:
+    - automate
+    - access-to-confirm
+    - human
+  access_to_confirm:
+  - slice: '5'
+    step: '3'
+    title: First draft
+  - slice: '5'
+    step: '6'
+    title: Distribution
+  - slice: '5'
+    step: '7'
+    title: Event RSVPs
+  open_items: []
+  ai_segments:
+  - slice: '5'
+    steps:
+    - '1'
+    - '2'
+    - '3'
+    - '4'
+  - slice: '5'
+    steps:
+    - '7'
+- id: signal-capture
+  name: Secure signal capture layer
+  slices:
+  - '6'
+  shared_slice_deps: []
+  decision_lens_rank: parallel-foundation
+  human_gates:
+  - slice: '6'
+    step: '9'
+    title: The IT and access check
+    states:
+    - human
+    - access-to-confirm
+  - slice: '6'
+    step: '10'
+    title: The AFSL and privacy decision
+    states:
+    - human
+  access_to_confirm:
+  - slice: '6'
+    step: '1'
+    title: All the signals arriving across the firm
+  - slice: '6'
+    step: '3'
+    title: Firm email
+  - slice: '6'
+    step: '4'
+    title: Meetings and internal notes
+  - slice: '6'
+    step: '5'
+    title: Holder and account data
+  - slice: '6'
+    step: '6'
+    title: A proven way into Front Office
+  - slice: '6'
+    step: '9'
+    title: The IT and access check
+  open_items: []
+  ai_segments:
+  - slice: '6'
+    steps:
+    - '1'
+    - '2'
+    - '3'
+    - '4'
+    - '5'
+    - '6'
+    - '7'
+    - '8'
+shared_skill_candidates:
+- candidate_name: jpe-shared-holder-recipient-identity
+  foundation: holder-recipient-identity
+  why: Turns raw Front Office exports into one client one row, related entities grouped and remembered.
+  used_by:
+  - client-communications
+  - capital-raise
+  slice_home: '2'
+- candidate_name: jpe-shared-market-data-source
+  foundation: market-data-source
+  why: One trusted source for VWAP, last close, market cap, cash, shares on issue.
+  used_by:
+  - capital-raise
+  - client-communications
+  - desk-notes
+  - market-screening
+  slice_home: null
+- candidate_name: jpe-shared-jp-voice-examples
+  foundation: jp-voice-examples
+  why: Stops outputs sounding generic; keeps adviser tone consistent; must not read as AI.
+  used_by:
+  - client-communications
+  - desk-notes
+  - events-marketing
+  - market-screening
+  slice_home: null
+- candidate_name: jpe-shared-per-corporate-client-folders
+  foundation: per-corporate-client-folders
+  why: Reusable per-company history of announcements, mandates, decks, prior JP work.
+  used_by:
+  - desk-notes
+  - capital-raise
+  - market-screening
+  - client-communications
+  - signal-capture
+  slice_home: null
+- candidate_name: jpe-shared-controlled-workspace-audit
+  foundation: controlled-workspace-audit
+  why: JP approves what the system can read, what it cannot do, what gets logged.
+  used_by:
+  - all
+  slice_home: null
+cross_slice_dependencies:
+- from_slice: '1'
+  at_step: 3-4
+  depends_on_slice: '2'
+- from_slice: '3'
+  at_step: '2'
+  depends_on_slice: 3a
+- from_slice: '3'
+  at_step: '6'
+  depends_on_slice: '2'
+grill_order:
+- session: 1
+  subject: shared-skill candidates
+  type: shared
+- session: 2
+  subject: signal-capture
+  type: workflow
+  rank: parallel-foundation
+- session: 3
+  subject: client-communications
+  type: workflow
+  rank: '1'
+- session: 4
+  subject: capital-raise
+  type: workflow
+  rank: '2'
+- session: 5
+  subject: desk-notes
+  type: workflow
+  rank: '3'
+- session: 6
+  subject: market-screening
+  type: workflow
+  rank: '4'
+- session: 7
+  subject: events-marketing
+  type: workflow
+  rank: '5'

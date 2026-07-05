@@ -1,0 +1,85 @@
+slice: "8"
+title: Live Capital Raise Follow-Up Tracking
+workflow: capital-raise
+working_date: 2026-06-30
+tagline: One live view of who was emailed, who bid, who asked, who usually bids but hasn't.
+what_changes: >
+  When a raise goes live, three streams run at once — deal email/SMS out via
+  Complii, bids landing in the book, client questions in the inbox. Today nothing
+  joins them; advisers keep hand-written call lists, miss people and questions in
+  books that close in hours. This adds a live tracker over the three streams —
+  one view per deal, kept current: who has not bid, who asked an unanswered
+  question and for how long, who normally bids but has not shown. Drafts replies
+  in JP voice for the adviser to check. JP owns allocation/scale-back; adviser
+  sends every reply. The catch is access — deal mailbox, book, past raises each
+  need JP + IT approval. Practical path: start with the mailbox stream alone.
+steps:
+  - id: "1"
+    title: The deal email and SMS go out
+    today: Adviser launches offer in Complii; staged send 30-45 min by adviser code.
+    with_ai: Sends unchanged through Complii. AI records who it went to as the baseline list ("waiting on 30 of 50"). Access — recipient set via same Complii/Front Office route as holder list.
+    states: [automate, access-to-confirm]
+  - id: "2"
+    title: Bids land in the Complii book
+    today: Clients bid via link; book consolidates web (yellow), manual, adviser (red) bids with notifications. "A fancy spreadsheet."
+    with_ai: AI reads the book to know who has come in and for how much — live "who has not bid yet" view. Access — no public Complii route found; export per deal or vendor route.
+    states: [automate, access-to-confirm]
+  - id: "3"
+    title: Client questions arrive in the inbox
+    today: Clients reply to the deal email; adviser reads between calls; some slip through.
+    with_ai: AI watches deal mailbox, separates real questions from noise, flags unanswered and wait time. Access — M365 admin approval scoped to the one deal inbox, plus compliance sign-off.
+    states: [automate, access-to-confirm]
+  - id: "4"
+    title: The call list
+    today: Hand-written on paper per deal. "You write a list to everyone you need to call."
+    with_ai: AI builds it — everyone the deal went to, minus bidders, minus already-replied/spoken, ordered by call priority. Replaces the paper.
+    states: [automate]
+  - id: "5"
+    title: Working the list
+    today: Adviser rings, ticks off, notes waiting — "you're not always in front of your piece of paper, so you do miss people."
+    with_ai: List stays live as bids and replies land; never goes stale. Calls and judgement stay with the adviser.
+    states: [automate]
+  - id: "6"
+    title: Who normally bids but hasn't?
+    today: Worked out from memory; method not pinned down.
+    with_ai: AI builds "usually bids" picture from past raises, flags missing regulars. Most valuable judgement to capture, most open questions. Access — history of past books.
+    states: [automate, access-to-confirm]
+  - id: "7"
+    title: Answering the questions
+    today: Under pressure some answered, others missed — "the book will be closed in a few hours."
+    with_ai: AI drafts a reply in JP voice per unanswered question, ready to check. Adviser edits and sends. Draft-only rule.
+    states: [automate, human]
+  - id: "8"
+    title: The book closes and moves to scale-back
+    today: Advisers close, take turns scaling back until numbers reconcile.
+    with_ai: Capital raise workflow (Slice 3) takes over — Complii automates letters/acceptances. Tracker stops at book close. JP owns every allocation and scale-back decision.
+    states: [human-review]
+step_counts: {automate: 7, access_to_confirm: 4, human_review: 1, human: 1}
+data_access:
+  - source: Deal mailbox
+    route: Microsoft standard email service, locked to single deal inbox, read-only; IT + compliance sign-off
+    confidence: medium gated
+  - {source: Complii book, route: export per deal or vendor-supported route, confidence: low}
+  - {source: Holder history / usually-bids, route: same Morrison/Front Office link as holder list + past raises history (location unknown), confidence: low-medium}
+open_questions:
+  - q: How do you work out who normally bids but has not come in, and where does that knowledge live?
+    who: Jason, Nic
+  - q: Anywhere today showing per deal who was emailed / asked / called / bid in one place?
+    who: Jason, Nic
+  - q: Whose inbox would AI read; what do IT and compliance need first?
+    who: Jason, IT, compliance
+  - q: Which replies flagged vs noise?
+    who: Jason, Nic
+  - q: Where do call recordings live; could phone follow-ups feed tracking?
+    who: Jason
+  - q: Per-adviser view or one shared deal-book view?
+    who: Jason, Nic
+fits: >
+  Inside the capital raise operating layer — the live window of a raise. Picks up
+  the deal Slice 3 sent, hands back at book close. Reuses holder identity layer
+  (Slice 2). Scoped read-only mailbox watcher is a small first proof of the
+  controlled-access model Slice 6 uses more broadly.
+effort: >
+  Medium. Light to build, heavy on access. First useful version runs on the
+  mailbox alone (unanswered-question prompts). About same as client updates;
+  lighter than term-sheet and firm-wide capture.

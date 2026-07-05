@@ -1,0 +1,96 @@
+slice: "3"
+title: Capital Raise Flow
+workflow: capital-raise
+working_date: 2026-06-30
+tagline: Where AI fits in a raise, what Complii already does, what stays your call.
+what_changes: >
+  AI runs most of the prep; Complii already runs the execution. The prize is not a
+  Complii plugin — it is the late-night term sheet and deal text before Complii
+  (own plan, Slice 3a). AI drafts term sheet and deal text from past deals, works
+  the pricing/capital-structure block from a confirmed source, formats for Complii
+  paste, proposes offer recipients from the holder list. Complii syncs holders,
+  stages email/SMS, captures bids, fills book, issues offer letters/acceptances.
+  Four calls stay with JP — offer price and discount, allocation, scale-back,
+  pressing send.
+steps:
+  - id: "1"
+    title: Win the mandate and agree the terms
+    today: JP wins lead-manager appointment, signs mandate setting deal terms.
+    with_ai: No change — commercial and relationship work stays with JP.
+    states: [human]
+  - id: "2"
+    title: Build the term sheet and the deal text
+    today: Team builds term sheet and Complii-ready text — overview, highlights, pricing, VWAP discounts, cap-structure maths, use of funds, disclosure. Late-night error-prone part.
+    with_ai: Covered in Slice 3a (13 steps). AI drafts reusable text from past deals, works pricing block; JP confirms every number. "You do not need a plugin to Complii, you need the term sheet created."
+    states: [nested-3a]
+    nested_slice: "3a"
+  - id: "3"
+    title: Set up the deal in Complii
+    today: New deal created, terms filled — bid start, offer setting, adviser vs house split.
+    with_ai: AI pre-fills deal settings from confirmed term sheet. Direct write into Complii unproven — needs Complii's own support.
+    states: [access-to-confirm]
+  - id: "4"
+    title: Put the deal text into the offer page and email
+    today: Term-sheet text pasted into Complii offer page and investor email, with attachments. "Formatted the way Complii likes it."
+    with_ai: Slice 3a delivers text already in Complii layout; paste fast, clean, stays in JP hands. No special access needed.
+    states: [automate]
+  - id: "5"
+    title: Sync holders from Front Office
+    today: Complii syncs Morrison holder/account data daily plus own corporate accounts.
+    with_ai: Already automated in Complii. No build.
+    states: [already-automated]
+  - id: "6"
+    title: Choose who the offer goes to
+    today: Adviser scopes by code — include/exclude codes, manual list, or all brokers.
+    with_ai: Reusing Slice 2, AI proposes scope from deal + saved pattern, ready to apply. Final-scope sign-off owner open.
+    states: [automate]
+    nested_slice: "2"
+  - id: "7"
+    title: Send the investor email
+    today: Complii stages over 30-45 min from admin address.
+    with_ai: Already automated; content from term-sheet prep; JP still triggers send.
+    states: [already-automated]
+  - id: "8"
+    title: Send the SMS
+    today: Complii sends offer SMS to Morrison accounts, standard text.
+    with_ai: Already automated.
+    states: [already-automated]
+  - id: "9"
+    title: Investors bid
+    today: Investor opens offer page, picks entity, enters amount.
+    with_ai: Investor's own action. Not automatable.
+    states: [human]
+  - id: "10"
+    title: The book fills
+    today: Complii pulls bids into book, colour-coded by source.
+    with_ai: Already automated. Watching deal mailbox for questions is Slice 8, kept separate.
+    states: [already-automated]
+  - id: "11"
+    title: Close the offer and scale back
+    today: Advisers close, take turns entering scale-back until book matches raise (e.g. 2.5m out of a 30m book).
+    with_ai: Stays JP's call. AI could lay out book and show scale-back scenarios for review only.
+    states: [human]
+  - id: "12"
+    title: Set up accounts for new bidders
+    today: Accounts set up for new and corporate-account bidders to settle. Steps not walked through.
+    with_ai: Unknown — steps and owner unclear. Open question.
+    states: [human]
+  - id: "13"
+    title: Offer letters and acceptances
+    today: Complii issues letters and firm offer email from template, records electronic acceptances. "All automated once we put our template in."
+    with_ai: Already automated.
+    states: [already-automated]
+step_counts: {already_automated: 5, automate: 2, nested_3a: 1, access_to_confirm: 1, human: 4}
+data_access:
+  - {source: Complii, route: hand JP Complii-ready text to paste (low-risk); direct connection needs Complii support and is optional, confidence: high paste / low direct}
+  - source: Holder data for recipients
+    route: Complii already syncs; recipient scope reuses Slice 2
+    confidence: medium, not critical path
+  - {source: Price and company data, route: belongs to Slice 3a, confidence: covered there}
+fits: >
+  The capital raise operating layer. Complii runs most of the raise; high-stakes
+  calls stay with JP; the one real build is Slice 3a. Recipient scope reuses
+  Slice 2. Each finished term sheet becomes precedent the AI learns from.
+effort: >
+  Small on its own; Medium with the term-sheet prep build it depends on. Mostly
+  coordination — Complii owns sending and downstream.

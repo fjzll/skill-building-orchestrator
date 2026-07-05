@@ -1,0 +1,71 @@
+slice: "1"
+title: Client Holder Update Emails
+workflow: client-communications
+working_date: 2026-07-01
+tagline: AI prepares the update, you review and send.
+what_changes: >
+  AI runs the workflow end to end up to a ready pack: watches the public ASX feed
+  against the watch list, reads each release, applies JP's rule (prepare draft by
+  default when price-sensitive, otherwise judge materiality and say why), pulls and
+  cleans the holder list, drafts the note in the relationship adviser's voice from
+  approved examples, attaches the source, checks the attachment, stages BCC batches
+  under the Microsoft send limit. The one human point is the end: check the pack,
+  own the materiality/advice call, choose which advisers' clients get it, send from
+  own mailbox. Win is speed (first out, not beaten to house stocks) and ending the
+  copy-paste-and-stage grind. Recipient list built by Slice 2.
+steps:
+  - id: "0"
+    title: Spotting the announcement
+    today: Adviser learns a watch-list company announced, via Iris live alerts (paid add-on) or ASX website (not delayed).
+    with_ai: AI watches public ASX announcement feed against watch list, surfaces each release with price-sensitive flag read off it. Public feed, no paid dependency; cleanest read route is a small open item.
+    states: [automate]
+  - id: "1"
+    title: Treating it as a possible update
+    today: Adviser treats announcement/quarterly/research report as possible client update. JP sends one at least every second day.
+    with_ai: AI reads the release, presents it as candidate update with one-line summary.
+    states: [automate]
+  - id: "2"
+    title: Deciding whether it matters
+    today: Adviser decides send-worthiness and which advisers' clients. Price-sensitive usually goes; the actual quarterly often not.
+    with_ai: AI applies the rule — draft by default when price-sensitive; else judge and state why; learns from feedback. Final materiality/advice call at send step. Jason quote — "have it read them, have a presumption it's price sensitive, it could prepare them, we've just got to approve it."
+    states: [automate]
+  - id: "3-4"
+    title: Building the recipient list
+    today: Adviser searches adviser code in Front Office, exports holder list, deletes duplicate entities by email.
+    with_ai: Handled by Slice 2 (holder-list workflow) — cleaned, deduped, scoped list handed into this pack. GML CSV enough for first proof pack; automatic pull and exact duplicate rule to confirm.
+    states: [automate, access-to-confirm]
+    nested_slice: "2"
+  - id: "5"
+    title: Writing the note
+    today: Adviser writes in own voice, often adapting Tyler's text — price, market cap, cash, tight summary, management commentary, upcoming catalysts.
+    with_ai: AI drafts JP house shape in the relationship adviser's voice from approved examples, keeping personal twang (Nic). Open — confirm GML/Strickland/Tyler as gold standard; brand or style guide.
+    states: [automate]
+  - id: "6"
+    title: Attaching the announcement
+    today: Adviser attaches source document; easy to forget (Gateway example).
+    with_ai: AI attaches source it already read and verifies the expected attachment is in the pack.
+    states: [automate]
+  - id: "7"
+    title: Staging the send
+    today: Addresses copied into BCC blocks of 20-30, staged under ~100 emails/person/hour Microsoft limit. Lauren blocked 22-Jun.
+    with_ai: AI assembles per-adviser batches under limit, ready as drafts. Send route (extra addresses vs advisor-branded platform) still to be chosen.
+    states: [automate, access-to-confirm]
+  - id: "8"
+    title: Approving and sending
+    today: Relationship adviser reviews and sends from own mailbox so it looks personal (relationship choice, not compliance). Lauren/Michael from corporate as fallback.
+    with_ai: AI hands per-adviser pack — draft, attachment, recipient list, choice of which advisers' clients. You check, own the call, send. Nothing goes out automatically. Jason quote — "give us a portal, we can go okay, send this to Nic's clients, my clients."
+    states: [human-review, human]
+  - id: "9"
+    title: Checking it got through
+    today: After a blocked send, how team confirms who received the update is unclear.
+    with_ai: AI checks sent items against recipient list, flags who still needs it. Needs Outlook access approved.
+    states: [automate, access-to-confirm]
+step_counts: {automate: 8, access_to_confirm: 3, human_review: 1, human: 1}
+fits: >
+  Part of client communications engine with Slice 2 (recipient list) and Slice 7
+  (social branch off same approval step). Holder-list layer also reused by capital
+  raise. Build this update engine first — best understood, named simplest to start.
+effort: >
+  Medium. Draft engine straightforward; adds proving holder data route, Outlook
+  access via IT provider, privacy/AFSL sign-off, send-limit workaround choice.
+  Lighter than term-sheet and desk-note builds, heavier than social-post branch.

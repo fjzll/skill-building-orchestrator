@@ -1,0 +1,14 @@
+fixtures: [fixtures/announcement.txt]
+output: output.md
+layer1:
+  required_fields: ["market cap", "cash", "attached", "catalysts"]
+  forbidden: ["as an AI", "I cannot"]
+layer2:
+  number_sources: [fixtures/announcement.txt]
+layer3:
+  criteria:
+    - {name: voice, description: Reads like a personal note from the relationship adviser, not AI}
+    - {name: faithfulness, description: Summary matches the announcement facts}
+  threshold_avg: 4.25
+  floor: 3
+  runs: 3

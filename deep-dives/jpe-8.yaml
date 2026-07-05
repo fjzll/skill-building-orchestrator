@@ -1,0 +1,76 @@
+slice: "8"
+title: Capital Raise Live Follow-Up and Communications Tracking
+working_date: 2026-06-30
+completeness: 7 of 8 confirmed · 0 working interpretation · 1 open
+evidence_note: Thin — rests on one part-1 exchange plus part-2 book mechanics. Open questions are the main output. Steps 3-7 overlap live, laid out in order for readability.
+flow_summary: >
+  Raise goes live — email/SMS via Complii, bids land in the book ("a fancy
+  spreadsheet"), good deals close within hours. Clients reply with questions,
+  some unanswered. Each adviser keeps a hand-written call list, ticks names off,
+  notes who they're waiting on; the paper is not always to hand so people get
+  missed, including regulars who would normally bid. Nothing joins sent emails,
+  inbound questions, phone follow-ups and the live book into one view.
+steps:
+  - id: '1'
+    title: Deal email and SMS out through Complii
+    status: confirmed
+    who: Adviser (Lauren/Michael corporate fallback)
+    load: mechanical
+    note: staged 30-45 min, recipients scoped by code, from Slice 3/3a prep
+  - {id: "2", title: Bids land in the Complii book, status: confirmed, who: Clients; adviser watching, load: mechanical, note: entity chosen against email; JP notified per bid; web yellow / manual normal / adviser red}
+  - id: '3'
+    title: Questions arrive in the adviser inbox
+    status: confirmed
+    who: Clients → adviser Outlook
+    load: reading
+    note: '"such-and-such asked you a question yesterday and you haven''t responded"; unanswered in fast books'
+  - id: '4'
+    title: Hand-written call list
+    status: confirmed
+    who: Each adviser
+    load: mechanical
+    quote: '"You write a list to everyone you need to call for this deal. I''ll write a list." Nic does same'
+  - id: '5'
+    title: Working the list
+    status: confirmed
+    who: Adviser
+    load: judgement
+    quote: '"you''re not always in front of your piece of paper, so you do miss people"; calls recorded, location of recordings undescribed'
+  - id: '6'
+    title: Who normally bids but has not responded
+    status: open
+    who: Adviser
+    question: how is it worked out — book, memory, past deals? Where does "usually bids" knowledge live?
+    load: judgement
+    note: Nic confirmed the phenomenon; method unevidenced
+  - id: '7'
+    title: Questions answered or missed
+    status: confirmed
+    who: Adviser
+    load: reading
+    note: '"the book will be closed in a few hours" — no bandwidth to call everyone'
+  - id: '8'
+    title: Book closes, moves to scale-back
+    status: confirmed
+    who: Jason and advisers
+    nested: '3'
+    load: judgement
+    note: take turns scaling it back until we've got no difference
+handoffs:
+  - {from: Complii, to: Client, what: deal email/SMS with bid link, status: confirmed}
+  - {from: Client, to: Complii book, what: bid against entity, status: confirmed}
+  - {from: Client, to: Adviser inbox, what: question/reply, status: confirmed}
+  - {from: Adviser, to: Paper list, what: names to call, status: confirmed}
+  - {from: Adviser, to: Client, what: follow-up call, status: confirmed}
+  - {from: Inbox + paper list, to: Complii book, what: reconciliation chased vs bid, status: open}
+  - {from: Adviser, to: Slice 3 scale-back, what: closed book, status: confirmed}
+open_items:
+  - {step: "6", what: usually-bids detection method and knowledge location, who: Jason, Nic}
+  - {step: "3,5,6", what: any single per-deal view of emailed/asked/called/bid, who: Jason, Nic}
+  - {step: slice, what: mailbox and data access AI may read; privacy/AFSL approvals, who: Jason, Adisyn/IT, compliance}
+  - {step: "3", what: real question vs routine noise, who: Jason, Nic}
+  - step: '5'
+    what: where call recordings live; phone follow-ups in tracking?
+    who: Jason
+  - {step: "4-6", what: per-adviser view or shared whole-deal view, who: Jason, Nic}
+sources: [Kickoff part 1 22-Jun (follow-up exchange), Kickoff part 2 22-Jun (Gateway Complii walkthrough), workflow map, identity file]

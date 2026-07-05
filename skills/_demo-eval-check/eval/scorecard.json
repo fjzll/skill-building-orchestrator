@@ -1,0 +1,51 @@
+{
+  "skill": "_demo-eval-check",
+  "layer1": {
+    "checks": [
+      {
+        "check": "required: market cap",
+        "pass": true
+      },
+      {
+        "check": "required: cash",
+        "pass": true
+      },
+      {
+        "check": "required: attached",
+        "pass": true
+      },
+      {
+        "check": "required: catalysts",
+        "pass": true
+      },
+      {
+        "check": "forbidden: as an AI",
+        "pass": true
+      },
+      {
+        "check": "forbidden: I cannot",
+        "pass": true
+      }
+    ],
+    "pass": true
+  },
+  "layer2": {
+    "numbers_checked": 6,
+    "ungrounded": [],
+    "pass": true
+  },
+  "layer3": {
+    "status": "pending",
+    "note": "no ANTHROPIC_API_KEY; judge not run",
+    "criteria": [
+      "voice",
+      "faithfulness"
+    ]
+  },
+  "gate": {
+    "layers_1_2": true,
+    "layer3": null,
+    "overall": true
+  },
+  "note": "layer3=None means judge pending; human review gates until calibrated"
+}

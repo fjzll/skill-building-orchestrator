@@ -1,0 +1,66 @@
+slice: "7"
+title: ASX Social Media Posts
+working_date: 2026-06-30
+completeness: 2 of 5 confirmed · 0 working interpretation · 3 open
+flow_summary: >
+  When an announcement lands (same trigger as client updates), JP decides whether
+  to put a short branded post on its public X and LinkedIn pages. House-style
+  habit weighted to paying corporate clients and bigger announcements. Used to be
+  more consistent, has fallen behind; plenty of prior posts to learn style from.
+  How a post is written, approved and published today is not described — the
+  middle of this flow is genuinely open.
+steps:
+  - {id: "1", title: ASX announcement appears, status: confirmed, who: Relationship adviser, note: same monitoring route as client updates, load: reading}
+  - id: '2'
+    title: Adviser decides worth a public post
+    status: confirmed
+    who: Relationship adviser
+    note: selective — "depends if it's a paying client, or whether it's a big announcement; some announcements we send out, not post"
+    load: judgement
+  - id: '3'
+    title: Post drafted
+    status: open
+    who: unconfirmed
+    question: who writes it; what does one contain (length, tone, link/attach, image/card); point to 3-4 best recent posts
+    load: reading
+  - id: '4'
+    title: Wording approved
+    status: open
+    who: likely relationship adviser
+    question: who approves; same person as email approver?
+    load: judgement
+  - id: '5'
+    title: Published to X and LinkedIn
+    status: open
+    who: unconfirmed
+    note: destinations confirmed; actor, tool, credentials unstated
+    question: who clicks post, through what (apps directly, page login, scheduler); who holds credentials?
+    load: mechanical
+handoffs:
+  - {from: ASX, to: Adviser, what: announcement as post candidate, status: confirmed}
+  - {from: Adviser decision, to: Drafter, what: go-ahead, status: open}
+  - {from: Drafter, to: Approver, what: draft post, status: open}
+  - {from: Approver, to: Publisher, what: approved post, status: open}
+open_items:
+  - {step: "3", what: post contents, ask: 3-4 best recent posts + what makes a good one, who: Jason/Nic}
+  - step: '2'
+    what: post-vs-email-only rule
+    ask: what tips it over the line; codifiable rule?
+    who: Jason
+  - step: 3-5
+    what: posting path
+    ask: who writes, signs off, clicks post, through what?
+    who: Jason/office
+  - step: '5'
+    what: account access
+    ask: who holds X/LinkedIn logins?
+    who: Jason/office
+  - step: all
+    what: cadence
+    ask: how often before; how far behind now?
+    who: Jason
+notes:
+  - Kickoff talk was about the desired AI skill ("now prepare the social media post for this"), not a walkthrough — detail is genuinely missing, not omitted.
+  - Draft→approve→publish order is logical sequence, not confirmed JP order.
+  - '"Post this?" beside email approval is a future ask, not a current step.'
+sources: [22-Jun kickoff part 1]

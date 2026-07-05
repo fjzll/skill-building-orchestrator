@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# orch — one command for the whole orchestrator.
+#   ./orch up       start the portal + conductor (your normal "on" switch)
+#   ./orch grill    start the NEXT grill session (interactive, seeded)
+#   ./orch status   pipeline state
+#   ./orch facts    force the facts pass (conductor also does this automatically)
+#   ./orch daemon   run the conductor in the foreground
+set -e
+cd "$(dirname "$0")"
+
+case "${1:-status}" in
+  up)
+    echo "▶ starting conductor (background, log: analysis/conductor.log)"
+    nohup python3 runner/conductor.py > /dev/null 2>&1 &
+    echo $! > analysis/.conductor-pid
+    echo "▶ starting portal at http://localhost:3000"
+    cd portal && exec npm run dev
+    ;;
+  down)
+    [ -f analysis/.conductor-pid ] && kill "$(cat analysis/.conductor-pid)" 2>/dev/null && rm analysis/.conductor-pid && echo "conductor stopped" || echo "conductor not running"
+    ;;
+  grill)
+    python3 runner/facts_extractor.py . > /dev/null
+    NEXT=$(python3 runner/runner.py next)
+    echo "$NEXT"
+    if ! echo "$NEXT" | grep -q "grill session"; then
+      echo "Nothing to grill — see above."; exit 0
+    fi
+    SUBJECT=$(echo "$NEXT" | head -1 | sed 's/^NEXT: grill session [0-9]* — //')
+    if ! command -v claude >/dev/null; then
+      echo ""
+      echo "The claude CLI is not installed. Either install it (npm install -g @anthropic-ai/claude-code)"
+      echo "or start the session in Cowork with this prompt:"
+      echo "-----------------------------------------------------------------------"
+      cat docs/grill-seed.txt 2>/dev/null | sed "s/{SUBJECT}/$SUBJECT/"
+      exit 0
+    fi
+    exec claude "$(sed "s/{SUBJECT}/$SUBJECT/" docs/grill-seed.txt)"
+    ;;
+  facts)   python3 runner/facts_extractor.py . ;;
+  daemon)  exec python3 runner/conductor.py "${@:2}" ;;
+  status)  python3 runner/runner.py status; echo; python3 runner/runner.py next ;;
+  build)   python3 runner/runner.py build "$2" ;;
+  test)    python3 runner/runner.py test "$2" ;;
+  *) echo "usage: ./orch [up|down|grill|status|facts|daemon|build <skill>|test <skill>]" ;;
+esac

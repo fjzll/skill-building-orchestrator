@@ -1,0 +1,84 @@
+slice: "2"
+title: Holder List Cleanup and Entity Matching
+working_date: 2026-07-01
+completeness: 7 of 10 confirmed · 0 working interpretation · 3 open
+flow_summary: >
+  Before an update, the adviser (or Lauren) needs one row per person, not per
+  account. Login to Front Office → search everyone under the adviser code holding
+  the stock → export CSV → dedupe by email → combine codes when sending for
+  several advisers → hand to Slice 1 send. GML files show a real export (adviser,
+  account, holding, contact, email, phone, address fields) and a
+  duplicate-handled version where Client Email changes while row count stays 108.
+  Mismatched-email entities, Complii C accounts and list sign-off are unevidenced.
+steps:
+  - id: '1'
+    title: Set the scope (stock + codes)
+    status: confirmed
+    who: Adviser or Lauren
+    note: every adviser has a code, some two; pilot = Jason's code + Nic's two
+    load: judgement
+    billable: non-billable
+  - {id: "2", title: Log in to Front Office, status: confirmed, who: Adviser or Lauren, note: GBST-white-labelled Morrison platform, "the old GV", load: mechanical}
+  - id: '3'
+    title: Search holders by code and stock
+    status: confirmed
+    who: Adviser or Lauren
+    note: '"held" search; exact search fields not detailed'
+    load: mechanical
+  - {id: "4", title: Export to CSV, status: confirmed, who: Adviser or Lauren, note: includes email addresses; full column set now evidenced by GML export, load: mechanical}
+  - {id: "5", title: Remove duplicates by email in Excel, status: confirmed, who: Adviser or Lauren, note: only matching rule in evidence; "pretty reliable" because entities share one email, load: mechanical}
+  - {id: "6", title: Combine adviser codes, status: confirmed, who: Usually Lauren, note: per-code exports combined; dedupe-vs-combine order and cross-code duplicates unstated, load: mechanical}
+  - id: '7'
+    title: Resolve mismatched-email entities
+    status: open
+    who: likely adviser
+    question: how are clients with entities under different emails spotted and grouped; how often does email-only miss?
+    load: judgement
+  - id: '8'
+    title: Decide on Complii C accounts
+    status: open
+    who: adviser
+    question: for routine updates is the list ever drawn from Complii C accounts (s708 contacts, no Morrison account) or Front Office only? (Part-2 hint was about raise sends, not updates)
+    load: judgement
+  - id: '9'
+    title: Final recipient-list sign-off
+    status: open
+    who: unconfirmed
+    question: does anyone approve the list before send, or does the builder just send? Where would a wrong list get caught?
+    load: judgement
+  - {id: "10", title: Hand cleaned list to Slice 1 send, status: confirmed, who: Adviser or Lauren, note: into BCC batches 20-30 under Microsoft limit, load: mechanical}
+handoffs:
+  - {from: Front Office, to: Adviser/Lauren, what: holder CSV export, status: confirmed}
+  - {from: Jason and Nic, to: Lauren, what: instruction to build/send across codes, status: confirmed}
+  - {from: Adviser/Lauren, to: Slice 1 send, what: cleaned deduped scoped list, status: confirmed}
+  - {from: List builder, to: Approver, what: list for sign-off, status: open}
+open_items:
+  - step: '4'
+    what: export route + shape consistency
+    ask: GML from Front Office? All stock exports same fields/format?
+    who: Jason/Lauren/Morrison
+  - step: '5'
+    what: dedupe edge cases
+    ask: blank/changed Client Email meaning; does email rule wrongly merge different people sharing one email?
+    who: Jason/Lauren
+  - step: '6'
+    what: order + cross-code handling
+    ask: dedupe before or after combining; client under two codes?
+    who: Lauren
+  - step: '7'
+    what: mismatched-email grouping
+    ask: how spotted/grouped; miss frequency?
+    who: Jason/Lauren
+  - step: '8'
+    what: C-account rule
+    ask: C accounts ever on update lists?
+    who: Jason
+  - step: '9'
+    what: approval owner
+    ask: who signs off?
+    who: Jason
+  - step: slice
+    what: messy-case walkthrough
+    ask: use GML export + duplicate-handled file to walk the actual duplicate patterns; enough for first proof pack?
+    who: Jason/Lauren
+sources: [22-Jun kickoff part 1, 22-Jun kickoff part 2, 28-May meeting, Jason GML proof pack 01-Jul]

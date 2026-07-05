@@ -1,0 +1,103 @@
+slice: "3a"
+title: Mandate to Term Sheet and Deal-Text Preparation
+parent_slice: "3"
+working_date: 2026-06-30
+completeness: 12 of 13 confirmed · 0 working interpretation · 1 open
+flow_summary: >
+  Mandate signed; Jason/Nic tell Lauren the terms. Lauren opens the JP template,
+  pulls reusable mandate text into matching sections. Nic drafts company overview
+  and investment highlights (the two time-eaters). Offer details and director
+  commitments lifted from mandate; use of funds set per deal. Night before —
+  back office emailed for ten-day VWAP and last close off Iress (~$1k/month),
+  Jason sets price and discounts, team works the capital-structure maths (shares
+  on issue off public filings, shares to issue, market cap, EV, post-offer cash)
+  — the late-night error point. Timetable ~7 days from back-to-trading. Lauren
+  updates per-deal disclosure lines. Final check unclear. Text reformatted the
+  way Complii expects. Two waves in practice — mandate-sourced sections early;
+  highlights, pricing, maths land the night before.
+steps:
+  - id: '1'
+    title: Terms confirmed to Lauren, mandate located
+    status: confirmed
+    who: Jason/Nic → Lauren
+    billable: 'yes'
+    load: mechanical
+    quote: we essentially tell Lauren what the terms are... with the mandate signed, then we start the process of making a term sheet
+  - id: '2'
+    title: Template opened, mandate text pulled in
+    status: confirmed
+    who: Lauren with Jason/Nic
+    billable: 'yes'
+    load: mechanical
+    quote: this is our normal template... we use the text a lot in the term sheet that we get in the mandate
+  - {id: "3", title: Company overview drafted, status: confirmed, who: Nic, billable: yes, load: reading, note: normally updated from a prior version; exact source pack unspecified}
+  - id: '4'
+    title: Investment highlights written
+    status: confirmed
+    who: Nic mostly
+    billable: 'yes'
+    load: judgement
+    quote: investment highlights, these are the ones that takes the time"; Nic — "quite a tedious process, chasing that term sheet
+  - id: '5'
+    title: Offer details and director commitments from mandate
+    status: confirmed
+    who: Jason with Lauren
+    billable: 'yes'
+    load: reading
+    note: Gateway — exec chairman took $1m of the placement, other directors committed
+  - {id: "6", title: Use of funds set, status: confirmed, who: Jason/team, billable: yes, load: judgement, quote: "use of funds is adjustable every time"}
+  - id: '7'
+    title: Ten-day VWAP and last close requested from back office
+    status: confirmed
+    who: Jason/team → back office (full Iress ~$1k/month)
+    billable: 'yes'
+    load: mechanical
+    quote: '"I go, can we please get a ten-day. They just provide them."; findable online too'
+  - id: '8'
+    title: Price and discounts set
+    status: confirmed
+    who: Jason
+    billable: 'yes'
+    load: judgement
+    note: settled after market the day before; Gateway — last close 6.5c, ten-day VWAP 6.23c, 11.8% discount
+  - id: '9'
+    title: Capital-structure maths
+    status: confirmed
+    who: Jason/team
+    billable: 'yes'
+    load: mechanical
+    quote: '"this is where at late night, you tend to make a mistake. Which is just data that can be pulled from websites"; Gateway raise ~$15m'
+  - {id: "10", title: Timetable set, status: confirmed, who: Jason/team, billable: yes, load: mechanical, quote: "timing's always about the same, it's always seven days... from the day that go back trading"}
+  - id: '11'
+    title: Disclosure boilerplate updated
+    status: confirmed
+    who: Lauren
+    billable: 'yes'
+    load: reading
+    note: holding line, lead-manager line, adviser options change; rest standard; "Lauren will know exactly where it changes every time"
+  - id: '12'
+    title: Final internal check
+    status: open
+    who: likely Jason and Nic
+    question: who checks, against what; second set of eyes on pricing/cap-structure maths?
+    load: judgement
+    note: no transcript describes a discrete check; mistakes still get made at night
+  - {id: "13", title: Reformatted into Complii deal text, status: confirmed, who: Lauren (Jackie on Gateway), billable: yes, load: mechanical, quote: "we'll copy and paste that and put that into Complii with the deal text... the way that Complii likes it formatted"}
+handoffs:
+  - {from: Jason/Nic, to: Lauren, what: terms + company + go-ahead, status: confirmed}
+  - {from: Nic, to: Jason, what: drafted overview + highlights, status: confirmed}
+  - {from: JP team, to: Back office, what: VWAP/last-close request, status: confirmed}
+  - {from: Back office, to: Jason, what: figures off Iress, status: confirmed}
+  - {from: Builder, to: Reviewer, what: finished term sheet for final check, status: open}
+  - {from: JP team, to: Complii (Slice 3), what: reformatted deal text, status: confirmed}
+open_items:
+  - {step: "12", what: discrete final check owner + second-eyes on maths, who: Jason}
+  - {step: "2", what: gold-standard mandate and term-sheet templates, who: Jason/Nic}
+  - {step: "7-9", what: single canonical source for VWAP/last close/cash/shares/market cap; direct Iress access or online, who: Jason}
+  - {step: "3-4", what: source material behind overview and highlights; reuse vs fresh, who: Nic}
+  - step: 3-8
+    what: which sections draftable pre-signing; draft during advanced discussions and bin if deal dies?
+    who: Jason
+  - {step: "13", what: exact Complii format for deal text and proceed-to-offer page, who: Lauren}
+  - {step: all, what: JP fee model on lead-managed raise; raises per year (size time saved vs revenue), who: Jason}
+sources: [22-Jun kickoff part 2 (Gateway walkthrough), 22-Jun part 1, 19-Jun Nic prep examples, JPE working map, JPE identity file]

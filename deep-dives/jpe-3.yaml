@@ -1,0 +1,109 @@
+slice: "3"
+title: Capital Raise Flow (Mandate to Term Sheet to Complii Deal)
+working_date: 2026-06-30
+completeness: 12 of 13 confirmed · 0 working interpretation · 1 open
+flow_summary: >
+  JP appointed lead manager, mandate signed. Jason/Nic/Lauren prepare JP-standard
+  term sheet and deal text (nested 3a — the AI target). Text formatted the way
+  Complii expects, pasted into proceed-to-offer page and investor email. Complii
+  syncs holders from Front Office daily; recipients scoped by advisor code;
+  Complii stages email (30-45 min, admin address) and SMS; investors bid under an
+  entity; book fills colour-coded (web yellow, manual normal, adviser red);
+  advisers close and take turns scaling back (Gateway: 2.5m out of ~30m); new/C
+  accounts set up to settle; Complii issues offer letters and records electronic
+  acceptances from templates.
+steps:
+  - id: '1'
+    title: Appointed lead manager, mandate signed
+    status: confirmed
+    who: Jason + Nic
+    billable: 'yes'
+    load: judgement
+    note: Gateway = normal lead-manager case; Finder weaker (co-manager, no full mandate). Ask — open to structures allowing earlier term-sheet drafting (Alpine precedent)?
+  - id: '2'
+    title: Term sheet and deal text prepared
+    status: confirmed
+    who: Nic (highlights/text) Jason (terms/pricing) Lauren (disclosure)
+    nested: 3a
+    billable: 'yes'
+    load: reading
+    note: overview + highlights take most time; pricing block is the late-night error point; the ask is term-sheet help, not a Complii plugin
+  - id: '3'
+    title: New deal created in Complii
+    status: confirmed
+    who: Lauren (Jackie on original Gateway)
+    billable: 'yes'
+    load: mechanical
+    note: bid start, soph/exempt setting, adviser vs house terms
+  - id: '4'
+    title: Deal text pasted into offer page and email
+    status: confirmed
+    who: Lauren or deal adviser
+    billable: 'yes'
+    load: mechanical
+    note: merge fields, attachments, media links; same content reused
+  - id: '5'
+    title: Complii syncs holders from Front Office
+    status: confirmed
+    who: Complii automated
+    load: mechanical
+    note: daily sync + Complii corporate C accounts (s708, no Morrison account/mobile). Ask — safe export/API route for prototype?
+  - id: '6'
+    title: Recipients scoped by advisor code
+    status: confirmed
+    who: Deal adviser
+    billable: 'yes'
+    load: judgement
+    note: include/exclude codes (3 letters, some advisers two), manual list upload, or all brokers. Ask — standard patterns and scope sign-off?
+  - id: '7'
+    title: Investor email staged and sent
+    status: confirmed
+    who: Complii, triggered by adviser
+    load: mechanical
+    note: staged 30-45 min, from admin email not no-reply
+  - id: '8'
+    title: SMS sent to Morrison accounts
+    status: confirmed
+    who: Complii
+    load: mechanical
+    note: same text every time, company and amount changed; only way to reach some accounts
+  - {id: "9", title: Investors bid under an entity, status: confirmed, who: Investor, load: judgement, note: email links all entities; JP notified per bid}
+  - id: '10'
+    title: Book fills and is managed
+    status: confirmed
+    who: Complii + JP team
+    billable: 'yes'
+    load: reading
+    note: '"a fancy spreadsheet"; red = adviser accounts to clear'
+  - id: '11'
+    title: Offer closed, scaled back, settlement set
+    status: confirmed
+    who: Jason/Nic/advisers in turn
+    billable: 'yes'
+    load: judgement
+    note: settlement routing e.g. through Argonaut
+  - id: '12'
+    title: New accounts set up for incoming bidders
+    status: open
+    who: likely Lauren/office
+    question: exact steps and owner for new/C-account bidders to settle?
+    load: mechanical
+  - id: '13'
+    title: Offer letters issued and accepted
+    status: confirmed
+    who: Complii from templates
+    billable: 'yes'
+    load: mechanical
+    note: '"all automated once we put our template in"; electronic acceptance + confirmation email'
+open_items:
+  - {step: 2/3a, what: gold-standard mandate + term sheet, who: Jason/Nic}
+  - {step: 2/3a, what: canonical price source (back-office Iress vs online), who: Jason/back office}
+  - {step: 2/3a, what: pre-signing vs post-pricing drafting split, who: Jason}
+  - {step: "2", what: approval path for AI-produced deal text in a live raise, who: Jason}
+  - {step: "5", what: safe Front Office/Complii export or API route for prototype, who: Jason/Adisyn}
+  - {step: "6", what: standard advisor-code send patterns + scope approver, who: Jason}
+  - {step: "12", what: new-account setup steps and owner, who: Jason/Lauren}
+notes:
+  - Confirmed 22-Jun — AI target is pre-Complii term sheet and deal text, not a plugin ("you don't actually need a plugin to Complii, you just need to be able to create the term sheet").
+  - Complii book access is real time; advisers notified on every bid.
+sources: [22-Jun kickoff part 2 (Gateway walkthrough), 22-Jun part 1, 19-Jun Nic prep examples (Norfolk)]

@@ -1,0 +1,79 @@
+slice: "5"
+title: Marketing, Events and Investor Invitations
+working_date: 2026-06-30
+completeness: 4 of 7 confirmed · 0 working interpretation · 3 open
+evidence_note: One of the thinner slices; open questions are the main output. Worked example — Racura Oncology and TrivarX investor luncheon, Bacco Shenton Park, 25-Jun-2026.
+flow_summary: >
+  Event or marketing need lands with one internal marketing staff member ("the
+  girl in the office"). She gathers event details and company logos, builds the
+  flyer/invitation in an unconfirmed design tool, then back-and-forths with
+  advisers until it looks right — one three-logo flyer took most of a day.
+  Distribution via Mailchimp (~5,983 contacts, notify@JPE address, events and
+  major announcements only — loses the personal-adviser look), Outlook, or
+  social. No proper brand style guide — loose asset pack; Dee and Jonah pushing
+  a colour guide and website redesign. Owner name, tool, approval path, RSVP
+  handling all open.
+steps:
+  - id: "1"
+    title: Marketing piece or event need arises
+    status: confirmed
+    who: Leadership and advisers (Jason, Nic)
+    load: judgement
+    note: tied to investor events, supported companies, or research-note promotion; 19-Jun produced the Racura/TrivarX luncheon
+  - id: "2"
+    title: Brief and brand assets assembled
+    status: open
+    who: likely requesting adviser + marketing staff member
+    load: reading
+    question: how is a piece requested; where do event details and logos come from; who assembles the brief?
+    note: 28-May — "three logos from different firms" for one flyer; brand material is "a pack of stuff"
+  - id: "3"
+    title: First draft produced
+    status: confirmed
+    who: internal marketing staff member (name unconfirmed)
+    load: mechanical
+    note: design tool unconfirmed — Jason didn't think she used AI; Nic "I'm not sure what she uses"; one flyer took most of a day
+  - id: "4"
+    title: Back-and-forth review with advisers
+    status: confirmed
+    who: reviewing advisers + staff member
+    load: judgement
+    note: pieces "quite often come back"; tedious rounds until "looking slick and sharp"
+  - id: "5"
+    title: Brand, compliance and audience sign-off
+    status: open
+    who: unconfirmed, likely adviser or leadership
+    load: judgement
+    question: who signs off brand, compliance wording and audience; same person as sender?
+  - id: "6"
+    title: Distribution to the audience
+    status: confirmed
+    who: not fully confirmed
+    load: mechanical
+    note: Mailchimp ~5,983 contacts from years of events, notify@JPE, events/major announcements only; Outlook for smaller sends; X/LinkedIn for social; per-piece routing and sender unstated
+  - id: "7"
+    title: Event RSVP and registration handling
+    status: open
+    who: unconfirmed
+    load: mechanical
+    question: how are RSVPs collected and tracked; who manages the attendee list?
+handoffs:
+  - {from: Adviser/leadership, to: Marketing staff, what: brief, status: open}
+  - {from: Marketing staff, to: Advisers, what: first draft, status: confirmed}
+  - {from: Advisers, to: Marketing staff, what: change requests, status: confirmed}
+  - {from: Adviser/staff, to: Sender, what: approved piece + audience, status: open}
+  - {from: Recipients, to: Event coordinator, what: RSVP replies, status: open}
+open_items:
+  - {step: "3", what: staff member's name and design tool, who: Jason/Nic}
+  - {step: "2", what: briefing route; details and logo sources, who: Jason/Nic/marketing}
+  - {step: "2-3", what: brand pack + new palette when website redesign lands, who: Jason/Dee}
+  - {step: "5", what: approval path, who: Jason/Nic}
+  - {step: "6", what: Mailchimp vs Outlook vs social routing; who sends, who: Jason/Lauren}
+  - {step: "7", what: RSVP capture and attendee list, who: Jason/Nic}
+  - step: 3,6
+    what: must output stay editable or is image/PDF enough?
+    who: Marketing/Jason
+  - step: all
+    what: overhead or billable to the promoted company?
+    who: Jason
+sources: [28-May meeting, 22-Jun kickoff part 1, 19-Jun Nic email (Racura/TrivarX invitation)]
