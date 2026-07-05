@@ -1,5 +1,5 @@
 {
-  "name": "skill-orchestrator-portal",
+  "name": "skill-building-orchestrator-portal",
   "private": true,
   "scripts": {
     "dev": "next dev",

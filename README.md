@@ -1,4 +1,4 @@
-# skill-orchestrator
+# skill-building-orchestrator
 
 Implementation orchestration layer for Transcend AI Partners — takes AI Review
 build plans and turns them into built, eval-gated skills. First client: JP

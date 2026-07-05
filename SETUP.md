@@ -11,8 +11,8 @@ pip3 install pyyaml
 ## Portal + conductor (the "on" switch)
 
 ```bash
-cd ~/Desktop/skill-orchestrator/portal && npm install   # once
-cd ~/Desktop/skill-orchestrator
+cd ~/Desktop/transcend-workspace/skill-building-orchestrator/portal && npm install   # once
+cd ~/Desktop/transcend-workspace/skill-building-orchestrator
 ./orch up          # starts conductor (background) + portal at http://localhost:3000
 ./orch down        # stops the conductor
 ```
