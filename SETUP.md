@@ -1,25 +1,6 @@
 # One-time setup on your Mac
 
-## Git
-
-The sandbox that built this repo couldn't manage git lock files on the mounted
-folder, so the `.git` directory here is stale. Fix it on your Mac (takes 10
-seconds):
-
-```bash
-cd ~/Desktop/skill-orchestrator
-rm -rf .git
-git init && git add -A && git commit -m "Initial: orchestrator + full JPE dataset"
-```
-
-(Alternatively clone from `repo.bundle` if present: `git clone repo.bundle fresh-copy`.)
-
-When you're ready for the PR review loop, create a GitHub repo and:
-
-```bash
-git remote add origin <your-repo-url>
-git push -u origin main
-```
+Git is already initialised with a clean history — nothing to fix.
 
 ## Python
 
@@ -27,17 +8,37 @@ git push -u origin main
 pip3 install pyyaml
 ```
 
-## Portal
+## Portal + conductor (the "on" switch)
 
 ```bash
-cd portal
-npm install
-npm run dev        # http://localhost:3000
+cd ~/Desktop/skill-orchestrator/portal && npm install   # once
+cd ~/Desktop/skill-orchestrator
+./orch up          # starts conductor (background) + portal at http://localhost:3000
+./orch down        # stops the conductor
 ```
+
+## Grill sessions
+
+```bash
+./orch grill       # works out the next session and launches it, seeded
+```
+
+Needs the claude CLI (`npm install -g @anthropic-ai/claude-code`). Without it,
+`./orch grill` prints the seeded prompt to paste into a Cowork session instead.
 
 ## Headless builds + Layer 3 judge
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-# and/or install the claude CLI for runner.py build
+export ANTHROPIC_API_KEY=sk-ant-...    # judge (Layer 3 evals)
+# claude CLI on PATH                   # headless skill builds
+```
+
+Until these exist, the conductor logs builds as SKIPPED and Layer 3 as pending —
+everything else still runs.
+
+## GitHub (when ready for the PR review loop)
+
+```bash
+git remote add origin <your-repo-url>
+git push -u origin main
 ```

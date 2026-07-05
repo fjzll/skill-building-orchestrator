@@ -20,20 +20,20 @@ portal/          Next.js implementation portal (JPE design system)
 docs/            grill-protocol.md
 ```
 
-## Quick start
+## Quick start — two human touchpoints, everything else autonomous
 
 ```bash
-pip install pyyaml                      # once
-python3 runner/facts_extractor.py .     # pre-grill facts pass
-python3 runner/runner.py status         # pipeline state
-python3 runner/runner.py next           # what to do next
+./orch up      # the on switch: conductor daemon + portal at http://localhost:3000
+./orch grill   # touchpoint 1: start the next grill session (interactive, auto-seeded)
 ```
 
-Portal:
+Touchpoint 2 is in the portal: the Proposals tab has **Confirm** and **Request
+changes** buttons. On Confirm, the conductor automatically builds the proposal's
+skills (shared deps first), runs the eval harness, writes scorecards and flips
+the status to `tested` (or `build-failed`). The conductor also re-runs the facts
+pass whenever `build-plans/` changes. Log: `analysis/conductor.log`.
 
-```bash
-cd portal && npm install && npm run dev   # http://localhost:3000
-```
+Manual equivalents (all optional): `./orch status|facts|daemon|build <skill>|test <skill>`.
 
 Evals (see `skills/_demo-eval-check/` for a worked example):
 
