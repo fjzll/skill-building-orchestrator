@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # orch — one command for the whole orchestrator.
+#   ./orch init <slug> "<Display Name>"   turn a fresh clone into a client repo
 #   ./orch up       start the portal + conductor (your normal "on" switch)
 #   ./orch grill    start the NEXT grill session (interactive, seeded)
 #   ./orch status   pipeline state
@@ -9,6 +10,25 @@ set -e
 cd "$(dirname "$0")"
 
 case "${1:-status}" in
+  init)
+    SLUG="$2"
+    NAME="$3"
+    if [ -z "$SLUG" ] || [ -z "$NAME" ]; then
+      echo "usage: ./orch init <slug> \"<Display Name>\""; exit 1
+    fi
+    if [ -f client.yaml ]; then
+      echo "client.yaml already exists — refusing to overwrite. Remove it first if you really mean to re-init."
+      exit 1
+    fi
+    TEMPLATE_COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+    cat > client.yaml <<EOF
+slug: $SLUG
+display_name: $NAME
+portal_title: Skill Implementation — $NAME
+template_commit: $TEMPLATE_COMMIT
+EOF
+    echo "wrote client.yaml (slug=$SLUG, display_name=$NAME, template_commit=$TEMPLATE_COMMIT)"
+    ;;
   up)
     echo "▶ starting conductor (background, log: analysis/conductor.log)"
     nohup python3 runner/conductor.py > /dev/null 2>&1 &
@@ -42,5 +62,5 @@ case "${1:-status}" in
   status)  python3 runner/runner.py status; echo; python3 runner/runner.py next ;;
   build)   python3 runner/runner.py build "$2" ;;
   test)    python3 runner/runner.py test "$2" ;;
-  *) echo "usage: ./orch [up|down|grill|status|facts|daemon|build <skill>|test <skill>]" ;;
+  *) echo "usage: ./orch [init <slug> \"<Name>\"|up|down|grill|status|facts|daemon|build <skill>|test <skill>]" ;;
 esac

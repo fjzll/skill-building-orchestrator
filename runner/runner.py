@@ -22,6 +22,9 @@ Usage:
 """
 import sys, os, glob, subprocess, json, re
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from client_config import require_client_config
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def frontmatter(path):
@@ -131,6 +134,7 @@ def cmd_test(skill):
     subprocess.run([sys.executable, harness, skill], cwd=ROOT)
 
 if __name__ == "__main__":
+    require_client_config(ROOT)
     args = sys.argv[1:]
     if not args or args[0] == "status":
         cmd_status()

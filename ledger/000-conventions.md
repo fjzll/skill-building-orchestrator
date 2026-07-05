@@ -1,13 +1,19 @@
 # Ledger entry 000 — Conventions
-date: 2026-07-04
-session: bootstrap (design grill with Lili & Danny)
+
+**Template note:** this entry ships as a genericized starting point. Fill in
+`## Decisions` item 8 with this client's cross-cutting rules during the
+bootstrap grill, and update the frontmatter below.
+
+date: <bootstrap date>
+session: bootstrap (design grill)
 status: approved
 
 ## Decisions
 
 1. **Naming convention.** Workflow skills: `<client>-<workflow>-<skill>`
-   (e.g. `jpe-client-updates-draft-pack`, `jpe-desk-note-research`).
-   Shared skills: `<client>-shared-<skill>` (e.g. `jpe-shared-holder-identity`).
+   (illustrative example from the JPE client run: `jpe-client-updates-draft-pack`,
+   `jpe-desk-note-research`). Shared skills: `<client>-shared-<skill>`
+   (example: `jpe-shared-holder-identity`).
 2. **Unit of a run** is one capability workflow, not one slice.
 3. **Grill order**: shared skills first, then workflows in Decision Lens rank order.
    One workflow per session, fresh context; this ledger is the complete
@@ -23,9 +29,10 @@ status: approved
 7. **Eval gates**: Layer 1 (deterministic) and Layer 2 (fact grounding) at 100%;
    Layer 3 (LLM judge rubric) threshold per proposal. Judge is calibrated
    against human verdicts before it gates alone.
-8. **Cross-cutting client rules (JPE)**: no automatic sending; keep the personal
-   adviser voice (must not read as AI); Front Office is the record; controlled
-   access first.
+8. **Cross-cutting client rules** — client-specific, fill in at bootstrap grill
+   (example from the JPE client run: no automatic sending; keep the personal
+   adviser voice, must not read as AI; Front Office is the record; controlled
+   access first).
 
 ## Ledger protocol
 

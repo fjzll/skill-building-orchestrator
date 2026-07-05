@@ -23,6 +23,9 @@ Log:   analysis/conductor.log
 import sys, os, glob, re, json, time, subprocess
 from shutil import which
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from client_config import require_client_config
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOG = os.path.join(ROOT, "analysis", "conductor.log")
 STAMP = os.path.join(ROOT, "analysis", ".facts-stamp")
@@ -140,6 +143,7 @@ def tick():
     stage_proposals()
 
 if __name__ == "__main__":
+    require_client_config(ROOT)
     once = "--once" in sys.argv
     interval = 15
     if "--interval" in sys.argv:

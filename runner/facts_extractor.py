@@ -16,15 +16,19 @@ Output: analysis/facts.yaml
 import sys, os, glob
 import yaml
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from client_config import require_client_config
+
 def load(path):
     with open(path) as f:
         return yaml.safe_load(f)
 
 def main(root="."):
+    slug = require_client_config(root)["slug"]
     bp_dir = os.path.join(root, "build-plans")
     wf_map = load(os.path.join(bp_dir, "workflow-map.yaml"))
     slices = {}
-    for p in sorted(glob.glob(os.path.join(bp_dir, "jpe-*.yaml"))):
+    for p in sorted(glob.glob(os.path.join(bp_dir, f"{slug}-*.yaml"))):
         s = load(p)
         slices[str(s["slice"])] = s
 

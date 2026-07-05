@@ -1,6 +1,6 @@
 ---
 workflow: <workflow-id>
-client: JPE
+client: <CLIENT>        # e.g. JPE
 status: proposed        # proposed | changes-requested | revised | confirmed | building | tested | build-failed
 version: 1
 ledger_entries: [<NNN-slug>]

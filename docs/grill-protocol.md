@@ -7,7 +7,7 @@ shared-skill candidates; later sessions cover one capability workflow each.
 Start a fresh Claude session (Cowork or Claude Code) with the grill-me skill and:
 - `analysis/facts.yaml` (the deterministic facts pass)
 - `ledger/*.md` (all approved entries — the complete state so far)
-- the workflow's `build-plans/jpe-*.yaml` and `deep-dives/jpe-*.yaml`
+- the workflow's `build-plans/<slug>-*.yaml` and `deep-dives/<slug>-*.yaml` (slug from `client.yaml`)
 
 ## Session rules
 1. Hypotheses are formed IN-SESSION from facts + ledger, never precomputed.
