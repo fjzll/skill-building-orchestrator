@@ -1,0 +1,63 @@
+name: orchestrator-pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pyyaml
+      - name: Validate canonical YAML
+        run: |
+          python3 - <<'EOF'
+          import yaml, glob, sys
+          bad = 0
+          for p in sorted(glob.glob('build-plans/*.yaml') + glob.glob('deep-dives/*.yaml')):
+              try:
+                  yaml.safe_load(open(p))
+              except Exception as e:
+                  print(f'FAIL {p}: {e}'); bad += 1
+          sys.exit(1 if bad else 0)
+          EOF
+      - name: Facts pass
+        run: python3 runner/facts_extractor.py .
+      - name: Run evals for all skills with eval configs
+        run: |
+          rc=0
+          for cfg in skills/*/eval/eval.yaml; do
+            skill=$(basename $(dirname $(dirname "$cfg")))
+            echo "=== eval: $skill ==="
+            python3 evals/harness/run_evals.py "$skill" || rc=1
+          done
+          exit $rc
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+  # Conductor-in-CI (build stage) activates once ANTHROPIC_API_KEY secret is set
+  # and proposals gain `status: confirmed` via merged PRs. Single tick per run.
+  conduct:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pyyaml
+      - name: Conductor single tick
+        run: python3 runner/conductor.py --once
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      - name: Commit status transitions and scorecards
+        run: |
+          git config user.name "orchestrator-bot"
+          git config user.email "bot@transcendai.com.au"
+          git add -A
+          git diff --cached --quiet || git commit -m "conductor: status transitions and scorecards [skip ci]"
+          git push
