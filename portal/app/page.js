@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getFacts, getWorkflowMap, getLedger, getProposals, getSkills } from "../lib/data";
+import { getFacts, getWorkflowMap, getLedger, getProposals, getSkills, getBlockers, getGrillOrderProgress } from "../lib/data";
 import ProposalActions from "./proposal-actions";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +10,11 @@ const TABS = [
   ["ledger", "Ledger"],
   ["builds", "Build Status"],
   ["scorecards", "Test Scorecards"],
+  ["blockers", "Blockers"],
 ];
+
+const CATEGORY_CHIP = { access: "amber", system: "red", materials: "purple" };
+const BLOCKER_STATUS_CHIP = { open: "amber", resolved: "green", superseded: "grey" };
 
 const STATUS_CHIP = {
   proposed: "amber", "changes-requested": "red", revised: "amber",
@@ -32,6 +36,7 @@ function Overview() {
   const map = getWorkflowMap();
   const proposals = getProposals();
   const skills = getSkills().filter(s => !s.name.startsWith("_"));
+  const grillOrder = getGrillOrderProgress();
   return (
     <>
       <Hero sub="Build plans in, tested skills out — grill-gated, ledger-backed." />
@@ -51,10 +56,11 @@ function Overview() {
       </div>
       <div className="card">
         <h2>Grill order</h2>
-        <table><thead><tr><th>Session</th><th>Subject</th><th>Type</th></tr></thead><tbody>
-          {(facts?.grill_order ?? []).map(g => (
+        <table><thead><tr><th>Session</th><th>Subject</th><th>Type</th><th>State</th></tr></thead><tbody>
+          {grillOrder.map(g => (
             <tr key={g.session}><td>{g.session}</td><td>{g.subject}</td>
-              <td><span className={"chip " + (g.type === "shared" ? "purple" : "grey")}>{g.type}{g.rank ? ` · rank ${g.rank}` : ""}</span></td></tr>
+              <td><span className={"chip " + (g.type === "shared" ? "purple" : "grey")}>{g.type}{g.rank ? ` · rank ${g.rank}` : ""}</span></td>
+              <td><span className={"chip " + g.progress.chip}>{g.progress.label}</span></td></tr>
           ))}
         </tbody></table>
       </div>
@@ -176,6 +182,57 @@ function Scorecards() {
   );
 }
 
+function Blockers() {
+  const items = getBlockers();
+  const open = items.filter(i => i.status === "open");
+  const closed = items.filter(i => i.status !== "open");
+  const byCategory = ["access", "system", "materials"].map(cat => [cat, open.filter(i => i.category === cat)]);
+  const other = open.filter(i => !["access", "system", "materials"].includes(i.category));
+  return (
+    <>
+      <Hero sub="One feed across all workflows — derived from proposal Blockers and Assumptions tables, build failures and stale flags." />
+      <div className="callout">
+        <b>{open.length}</b> open · <b>{closed.length}</b> resolved/superseded ·
+        Sources: proposals/*.md (nothing lives only here — resolve items by amending the proposal + ledger)
+      </div>
+      {items.length === 0 && (
+        <div className="card"><h2>No blockers recorded</h2>
+          <p className="muted">Blockers and assumptions are written into proposals at grill time; build failures and stale flags come from the conductor.</p></div>
+      )}
+      {byCategory.map(([cat, list]) => list.length > 0 && (
+        <div className="card" key={cat}>
+          <h2><span className={"chip " + CATEGORY_CHIP[cat]}>{cat.toUpperCase()}</span> {list.length} open</h2>
+          <table><thead><tr><th>Item</th><th>Workflow</th><th>Kind</th><th>Detail</th><th>Status</th></tr></thead><tbody>
+            {list.map((b, i) => (
+              <tr key={i}><td><b>{b.item}</b></td><td>{b.workflow}</td>
+                <td><span className="chip grey">{b.kind}</span></td>
+                <td>{b.detail}</td>
+                <td><span className={"chip " + (BLOCKER_STATUS_CHIP[b.status] || "grey")}>{b.status}</span></td></tr>
+            ))}
+          </tbody></table>
+        </div>
+      ))}
+      {other.length > 0 && (
+        <div className="card">
+          <h2><span className="chip grey">OTHER</span> {other.length} open</h2>
+          <table><tbody>{other.map((b, i) => <tr key={i}><td><b>{b.item}</b></td><td>{b.workflow}</td><td>{b.detail}</td></tr>)}</tbody></table>
+        </div>
+      )}
+      {closed.length > 0 && (
+        <div className="card">
+          <h2>Resolved / superseded</h2>
+          <table><tbody>
+            {closed.map((b, i) => (
+              <tr key={i}><td className="muted">{b.item}</td><td>{b.workflow}</td>
+                <td><span className={"chip " + (BLOCKER_STATUS_CHIP[b.status] || "grey")}>{b.status}</span></td></tr>
+            ))}
+          </tbody></table>
+        </div>
+      )}
+    </>
+  );
+}
+
 export default async function Page({ searchParams }) {
   const sp = await searchParams;
   const tab = sp?.tab || "overview";
@@ -191,6 +248,7 @@ export default async function Page({ searchParams }) {
         : tab === "ledger" ? <Ledger />
         : tab === "builds" ? <Builds />
         : tab === "scorecards" ? <Scorecards />
+        : tab === "blockers" ? <Blockers />
         : <Overview />}
     </div>
   );

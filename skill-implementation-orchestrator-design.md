@@ -2,7 +2,8 @@
 
 **Status:** Decided via grill-me session · 04-Jul-2026
 **Context:** Transcend AI Partners. The AI Review layer already orchestrates multiple skills to produce the client portal documents (workflow map, deep dives, build plans, decision lens). This layer does the same for the *implementation* side: it picks up confirmed build plans and turns them into built, tested skills.
-**First client case:** JP Equity Partners (JPE) — 9 slices grouped into 6 capability workflows.
+**Scope:** reusable implementation template; each client clone supplies its own
+workflow slices, capability workflows, evidence, and delivery constraints.
 
 ---
 
@@ -39,7 +40,7 @@ ingest build plans
    - **Hypotheses are formed live at the start of each grill session** from facts + the decision ledger so far. Later sessions inherit earlier decisions (e.g. merge conventions), so precomputed hypotheses would go stale and anchor the session.
    - **Cut-line heuristics** used as hypothesis generators, not deciders:
      - Cut at human gates — a skill is the longest uninterrupted AI-run segment between human review/send steps.
-     - Cut at shared foundations — anything used by multiple workflows (holder-recipient identity, JP voice/examples, market-data source, client folders) becomes a standalone shared skill that workflow skills declare as dependencies.
+     - Cut at shared foundations — anything used by multiple workflows (holder-recipient identity, approved voice examples, market-data source, client folders) becomes a standalone shared skill that workflow skills declare as dependencies.
 7. **Decision ledger:** append-only record; each session reads it on entry and writes its decisions as its final act; human approval of that written entry is the session's exit gate. The ledger is the complete inter-session state (nothing important lives only in a session's chat) and doubles as the decision trace.
 
 ## Build proposals & portal review
@@ -68,8 +69,8 @@ ingest build plans
     - Skills live in a per-client repo, one directory per skill, with fixtures and test definition inside the skill directory. `.skill` packaging is a release step.
     - **The builder cannot change the contract.** If proposal boundaries don't work mid-build, it stops and raises a structural change request into the portal revision loop.
 11. **Naming convention** (recorded in the ledger):
-    - Workflow skills: `<client>-<workflow>-<skill>` — e.g. `jpe-client-updates-draft-pack`, `jpe-desk-note-research`
-    - Shared skills: `<client>-shared-<skill>` — e.g. `jpe-shared-holder-identity`
+    - Workflow skills: `<client>-<workflow>-<skill>` — e.g. `<client>-client-updates-draft-pack`
+    - Shared skills: `<client>-shared-<skill>` — e.g. `<client>-shared-holder-identity`
 
 ## Test — eval-gated, not vibes
 
@@ -90,10 +91,12 @@ ingest build plans
 | 2 | Portal support for proposal tabs, anchored review comments, and the status flow | Ash / portal build |
 | 3 | Which model/framework runs the sessions-in-fresh-contexts mechanic (grill sessions, builders, judges) | Transcend |
 
-## JPE first run (worked example)
+## Illustrative first run
 
-- Unit: 6 capability workflows → grill order: shared skills, then client updates & social branch, capital raise layer, desk notes, screening, events, signal capture (per Decision Lens rank).
-- First proof: `jpe-client-updates-draft-pack` tested by reproducing Jason's GML pack from the raw CSV + announcement PDF, cross-checked against Strickland and Tyler examples for generalisation.
+- A client run groups its process slices into ranked capability workflows, with
+  shared foundations grilled before workflow-specific work.
+- The first proof should reproduce a supplied, approved example from source
+  materials and compare the result with independent approved examples.
 
 ---
 
@@ -104,13 +107,13 @@ The portal review UI is optional — everything it does (statuses, versions, dif
 ### Repo layout
 
 ```
-jpe-skills/
+<client>-skills/
   build-plans/        # canonical YAML per slice (adapter output from portal source format)
   ledger/             # append-only: 001-shared-skills.md, 002-client-updates.md…
   proposals/          # one .md per workflow, frontmatter: status, version
   skills/
-    jpe-shared-holder-identity/   # SKILL.md + scripts + fixtures/ + eval/
-    jpe-client-updates-draft-pack/
+    <client>-shared-holder-identity/   # SKILL.md + scripts + fixtures/ + eval/
+    <client>-client-updates-draft-pack/
   evals/              # shared harness code
 ```
 
@@ -121,7 +124,7 @@ Proposal status lives in frontmatter (`status: proposed | confirmed | building |
 - Proposal revision = PR → versioning and visible diffs for free.
 - PR line comments = anchored review actions.
 - Approve/merge = confirmation; request-changes = the `changes requested ⇄ revised` cycle.
-- CI check flags dependent proposals when any `jpe-shared-*` path changes (ripple handling).
+- CI check flags dependent proposals when any `<client>-shared-*` path changes (ripple handling).
 
 ### Driver = Claude Agent SDK (thin scripts per stage)
 
@@ -140,9 +143,14 @@ New code is small: the build-plan adapter, the facts extractor, the eval harness
 
 ---
 
-## Portal style guide (extracted from live JPE portal)
+## Portal style guide
 
-For building the implementation portal as a sibling app to the client review portal — same shell, new tabs (Proposals, Ledger, Build Status, Test Scorecards) — rendering from the git repo. Portal is read-and-review only, with two write actions: anchored comments and confirm (both call the GitHub API; the PR stays the real mechanism).
+The implementation portal renders repository state in a consistent card-based
+shell. It provides Proposals, Ledger, Build Status, Test Scorecards, and
+Blockers; the Blockers tab is a derived feed aggregating proposal Blockers and
+Assumptions tables, build-failed statuses, and stale flags. The portal is
+read-and-review only, with two write actions: anchored comments and confirm
+(both call the GitHub API; the PR stays the real mechanism).
 
 ### Design tokens (`:root`)
 

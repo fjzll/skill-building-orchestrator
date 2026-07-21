@@ -18,7 +18,9 @@ Start a fresh Claude session (Cowork or Claude Code) with the grill-me skill and
    session never blocks on client input; it records an assumption + IR.
 4. Naming per ledger 000: `<client>-<workflow>-<skill>` / `<client>-shared-<skill>`.
 5. Exit act: write the ledger entry (decisions, splits, assumptions, IRs emitted,
-   conventions added) and update/create the workflow's proposal from TEMPLATE.md.
+   conventions added, **and a "Rejected alternatives / why-nots" section** — the
+   options considered and turned down, with reasons; see ledger 000) and
+   update/create the workflow's proposal from TEMPLATE.md.
    Human approval of the ledger entry is the exit gate.
 
 ## After all sessions

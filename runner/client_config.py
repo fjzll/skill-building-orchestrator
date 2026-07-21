@@ -3,9 +3,9 @@
 Every client clone of this template carries a client.yaml at repo root
 (gitignored in the template itself, committed in client clones):
 
-    slug: jpe
-    display_name: JP Equity Partners
-    portal_title: Skill Implementation — JP Equity Partners
+    slug: acme
+    display_name: Acme Corp
+    portal_title: Skill Implementation — Acme Corp
     template_commit: <hash>
 
 If client.yaml is missing, this is a bare template clone — callers should

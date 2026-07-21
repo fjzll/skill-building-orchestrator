@@ -11,9 +11,8 @@ status: approved
 ## Decisions
 
 1. **Naming convention.** Workflow skills: `<client>-<workflow>-<skill>`
-   (illustrative example from the JPE client run: `jpe-client-updates-draft-pack`,
-   `jpe-desk-note-research`). Shared skills: `<client>-shared-<skill>`
-   (example: `jpe-shared-holder-identity`).
+   (for example, `<client>-client-updates-draft-pack`). Shared skills:
+   `<client>-shared-<skill>` (for example, `<client>-shared-holder-identity`).
 2. **Unit of a run** is one capability workflow, not one slice.
 3. **Grill order**: shared skills first, then workflows in Decision Lens rank order.
    One workflow per session, fresh context; this ledger is the complete
@@ -30,9 +29,8 @@ status: approved
    Layer 3 (LLM judge rubric) threshold per proposal. Judge is calibrated
    against human verdicts before it gates alone.
 8. **Cross-cutting client rules** — client-specific, fill in at bootstrap grill
-   (example from the JPE client run: no automatic sending; keep the personal
-   adviser voice, must not read as AI; Front Office is the record; controlled
-   access first).
+   (for example: required human approvals, voice or brand constraints, systems
+   of record, and access controls).
 
 ## Ledger protocol
 
@@ -41,3 +39,9 @@ status: approved
 - Each grill session writes its own entry as its final act; human approval of
   that entry is the session exit gate.
 - Entry frontmatter: date, session, status (draft | approved).
+- **Every entry includes a `## Rejected alternatives / why-nots` section**: the
+  options considered and turned down, and why. Decisions carry between sessions
+  automatically; the reasoning perimeter around them is lost unless written
+  here. This is the mitigation for fresh-context nuance loss — builders and
+  re-grill sessions read it so they don't re-litigate (or accidentally adopt)
+  paths already ruled out. "None considered" is a valid entry, silence is not.

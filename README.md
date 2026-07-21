@@ -7,10 +7,6 @@ clone with a `client.yaml` and its own build-plans, deep-dives, ledger,
 proposals and skills. Design decisions: see
 `skill-implementation-orchestrator-design.md` and `ledger/000-conventions.md`.
 
-The first client run (JP Equity Partners / JPE) produced this template by
-extraction — see `jpe-skills/` (or wherever that clone has been moved) for a
-worked example of every file described below.
-
 ## Starting a new client
 
 ```bash
@@ -66,7 +62,7 @@ skills/          one directory per skill (fixtures + eval config + scorecard ins
 evals/harness/   3-layer eval harness (deterministic / grounding / LLM judge)
 runner/          client_config.py + facts_extractor.py + runner.py + conductor.py
 portal/          Next.js implementation portal (title reads client.yaml at build time)
-docs/            grill-protocol.md
+docs/            grill-protocol.md, failure-triage.md (LLM triage hook design, not yet implemented)
 ```
 
 ## Quick start — two human touchpoints, everything else autonomous

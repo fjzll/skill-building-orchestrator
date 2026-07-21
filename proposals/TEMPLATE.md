@@ -1,6 +1,6 @@
 ---
 workflow: <workflow-id>
-client: <CLIENT>        # e.g. JPE
+client: <CLIENT>        # client identifier
 status: proposed        # proposed | changes-requested | revised | confirmed | building | tested | build-failed
 version: 1
 ledger_entries: [<NNN-slug>]
@@ -26,8 +26,12 @@ Derived view of ledger decisions — do not edit content here without a ledger a
 |---|---|---|
 
 ## Blockers
-| # | Open item | Blocks build? (yes / proceed-under-assumption) |
-|---|---|---|
+
+Category: access / system / materials · Status: open / resolved / superseded.
+The portal Blockers tab aggregates these rows across all proposals.
+
+| # | Open item | Category | Status | Blocks build? (yes / proceed-under-assumption) |
+|---|---|---|---|---|
 
 ## Test definition
 - Fixtures:
