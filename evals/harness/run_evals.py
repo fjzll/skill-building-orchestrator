@@ -127,6 +127,13 @@ def main(skill):
     if not os.path.exists(out_path):
         print(f"missing output under test: {out_path}"); sys.exit(2)
     output_text = read(out_path)
+    # Exit 2 = the suite cannot run at all (environment-shaped). Exit 1 = it ran
+    # and the output failed (implementation-shaped). The conductor refines the
+    # second and escalates the first, so the distinction has to be explicit.
+    sources = list(cfg.get("fixtures", [])) + list(cfg.get("layer2", {}).get("number_sources", []))
+    missing = [f for f in sources if not os.path.exists(os.path.join(skill_dir, f))]
+    if missing:
+        print(f"missing fixtures: {', '.join(missing)}"); sys.exit(2)
     fixtures_text = "\n\n".join(read(os.path.join(skill_dir, f)) for f in cfg.get("fixtures", []))
 
     l1 = layer1(cfg.get("layer1", {}), output_text)

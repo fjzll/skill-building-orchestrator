@@ -6,17 +6,24 @@ Loop (default every 15s):
   2. BUILD   proposal status: confirmed -> building; run headless builds for its
              skills (shared deps first, one at a time, fresh process each)
   3. TEST    built skills with an eval config -> run harness -> scorecard
-  4. DONE    all skills of a proposal pass layers 1-2 -> status: tested
-             (layer 3 pending judge counts as pass until calibrated; a hard
-             layer-1/2 failure marks the proposal build-failed and stops)
+  4. REFINE  on an implementation-shaped gate failure, re-run the builder
+             against the specific failing checks, then re-test — bounded by the
+             same attempt budget, with the confirmed test suite re-hashed before
+             and after every attempt
+  5. DONE    all skills of a proposal pass layers 1-2 -> status: tested
+             (layer 3 pending judge counts as pass until calibrated; a failure
+             that survives the budget marks the proposal build-failed)
 
 Human touchpoints are NOT here: grilling is interactive (orch grill) and
 confirmation happens in the portal. The conductor only advances confirmed work.
 
 Builds are budgeted: each skill gets at most BUILD_ATTEMPT_CAP attempts per
-proposal version, counted in skills/<skill>/.build-attempts. A builder that
-writes CHANGE_REQUEST.md stops the proposal instead of being rebuilt — there
-the contract failed, not the build.
+proposal version, counted in skills/<skill>/.build-attempts and shared between
+clean builds and refines (open question 1 in the improvement plan: one pooled
+budget of 3 in v1, to be revisited with retrospect data). The counter resets
+when a proposal is confirmed and when the gate passes. A builder that writes
+CHANGE_REQUEST.md stops the proposal instead of being rebuilt — there the
+contract failed, not the build.
 
 Builds run through the `claude` CLI if present (or ANTHROPIC_API_KEY for the
 judge). With neither, build steps are logged as SKIPPED so the rest of the
@@ -139,7 +146,6 @@ def build_skill(skill):
         log(f"build {skill}: BLOCKED — no confirmed eval/eval.yaml to build against")
         return "blocked"
     if os.path.exists(os.path.join(sdir, "SKILL.md")):
-        clear_attempts(skill)
         log(f"build {skill}: already built")
         return "built"
     if not os.path.exists(os.path.join(sdir, "BUILD_BRIEF.md")):
@@ -165,7 +171,6 @@ def build_skill(skill):
         log(f"build {skill}: builder raised a change request")
         return "change-request"
     if r.returncode == 0 and os.path.exists(os.path.join(sdir, "SKILL.md")):
-        clear_attempts(skill)
         log(f"build {skill}: done")
         return "built"
     if attempt >= BUILD_ATTEMPT_CAP:
@@ -176,17 +181,125 @@ def build_skill(skill):
 
 def test_skill(skill):
     """Returns pass | fail | blocked."""
-    cfg = os.path.join(ROOT, "skills", skill, "eval", "eval.yaml")
-    if not os.path.exists(cfg):
+    if not os.path.exists(config_path(ROOT, skill)):
         log(f"test {skill}: BLOCKED — no eval/eval.yaml (the confirmed test suite is missing)")
         return "blocked"
     r = subprocess.run([sys.executable, os.path.join(ROOT, "evals", "harness", "run_evals.py"), skill],
                        capture_output=True, text=True)
+    if r.returncode == 2:  # the suite could not run: missing output or fixtures
+        log(f"test {skill}: BLOCKED — {r.stdout.strip().splitlines()[-1] if r.stdout.strip() else 'suite could not run'}")
+        return "blocked"
     log(f"test {skill}: {'gate PASS' if r.returncode == 0 else 'gate FAIL'}")
     return "pass" if r.returncode == 0 else "fail"
 
+# ---------- convergence loop ----------
+def scorecard(skill):
+    try:
+        with open(os.path.join(ROOT, "skills", skill, "eval", "scorecard.json")) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return None
+
+def archive_scorecard(skill, attempt):
+    """Keep one scorecard per attempt — the paper trail for triage and retrospect."""
+    live = os.path.join(ROOT, "skills", skill, "eval", "scorecard.json")
+    if not os.path.exists(live):
+        return
+    with open(live) as f:
+        body = f.read()
+    with open(os.path.join(ROOT, "skills", skill, "eval", f"scorecard.attempt-{attempt}.json"), "w") as f:
+        f.write(body)
+
+def failing_checks(skill):
+    """The specific checks a refine attempt has to satisfy."""
+    card = scorecard(skill) or {}
+    failing = [c["check"] for c in card.get("layer1", {}).get("checks", []) if not c.get("pass")]
+    ungrounded = card.get("layer2", {}).get("ungrounded", [])
+    if ungrounded:
+        failing.append("layer2: numbers not traceable to a source fixture: " + ", ".join(ungrounded))
+    if card.get("gate", {}).get("layer3") is False:
+        avg = card.get("layer3", {}).get("overall_avg")
+        failing.append(f"layer3: judge rubric average {avg} is below the confirmed threshold")
+    return failing
+
+def failure_shape(skill):
+    """implementation (refine-eligible) | environment (escalate).
+
+    Deterministic and deliberately narrow — Phase 2 replaces this heuristic with
+    triage verdicts. Anything it cannot recognise escalates rather than burning
+    budget on a refine that was never going to help.
+    """
+    return "implementation" if failing_checks(skill) else "environment"
+
+def suite_tampered(skills, expected_hash):
+    """The frozen hash covers the whole proposal, so any skill's suite counts."""
+    if not expected_hash:
+        return False
+    return suite_hash(ROOT, skills) != expected_hash
+
+def refine_skill(skill, failing):
+    """One bounded refine attempt: fix the output against the failing checks."""
+    sdir = os.path.join(ROOT, "skills", skill)
+    if not which("claude"):
+        log(f"refine {skill}: SKIPPED — no `claude` CLI on PATH")
+        return "skipped"
+    attempt = record_attempt(skill)
+    log(f"refine {skill}: attempt {attempt}/{BUILD_ATTEMPT_CAP} against {len(failing)} failing check(s)")
+    subprocess.run(
+        ["claude", "-p",
+         "The eval gate for this skill failed. Read BUILD_BRIEF.md and eval/scorecard.json in this "
+         "directory, then fix the skill and its output so these checks pass:\n"
+         + "\n".join(f"- {c}" for c in failing)
+         + "\neval/eval.yaml and everything under fixtures/ are read-only context — the test suite "
+           "was confirmed with the contract and must not be edited. If the failing checks cannot be "
+           "satisfied within the contract, write CHANGE_REQUEST.md and stop.",
+         "--output-format", "json"],
+        cwd=sdir, capture_output=True, text=True, timeout=3600)
+    if os.path.exists(os.path.join(sdir, "CHANGE_REQUEST.md")):
+        log(f"refine {skill}: builder raised a change request")
+        return "change-request"
+    return "refined"
+
+def converge_skill(skill, proposal_skills, expected_hash):
+    """Build, test, and refine until the gate passes or the budget runs out.
+
+    No LLM drives this loop: the scheduler decides, and each iteration is a
+    fresh sealed subprocess. The suite is re-hashed before and after every
+    attempt, so 'never weaken a test to pass it' is enforced mechanically.
+    """
+    evaluation = 0
+    while True:
+        if suite_tampered(proposal_skills, expected_hash):
+            log(f"{skill}: TAMPERED — the confirmed test suite changed since it was frozen")
+            return "tampered"
+        built = build_skill(skill)
+        if built != "built":
+            return built
+        result = test_skill(skill)
+        evaluation += 1
+        archive_scorecard(skill, evaluation)
+        if suite_tampered(proposal_skills, expected_hash):
+            log(f"{skill}: TAMPERED — the test suite changed during the attempt")
+            return "tampered"
+        if result == "pass":
+            clear_attempts(skill)
+            return "pass"
+        if result != "fail":
+            return result
+        failing = failing_checks(skill)
+        if failure_shape(skill) != "implementation":
+            log(f"{skill}: eval failure is environment-shaped — escalating instead of refining")
+            return "blocked"
+        if attempts_used(skill) >= BUILD_ATTEMPT_CAP:
+            log(f"{skill}: budget exhausted with {len(failing)} check(s) still failing")
+            return "exhausted"
+        refined = refine_skill(skill, failing)
+        if refined != "refined":
+            return "change-request" if refined == "change-request" else "retry"
+
 # Outcomes that stop a proposal, most severe first, and the status each sets.
 TERMINAL_OUTCOMES = [
+    ("tampered", "build-failed"),
     ("exhausted", "build-failed"),
     ("fail", "build-failed"),
     ("blocked", "blocked"),
@@ -208,6 +321,8 @@ def confirm_proposal(path, meta):
         log(f"{name}: BLOCKED — no confirmed eval/eval.yaml for: {', '.join(missing)}")
         return "blocked"
     frozen = suite_hash(ROOT, names)
+    for skill in names:  # the budget is per skill per proposal version
+        clear_attempts(skill)
     set_fm(path, "eval_hash", frozen)
     set_fm(path, "status", "building")
     log(f"{name}: confirmed -> building ({len(names)} skills, eval_hash {frozen[:12]})")
@@ -219,10 +334,10 @@ def advance_proposal(path, meta):
     if not names:
         log(f"{name}: no skills listed in frontmatter — waiting")
         return
+    expected_hash = meta.get("eval_hash")
     outcomes = []
     for skill in names:  # proposal lists shared deps first by convention
-        built = build_skill(skill)
-        outcomes.append(test_skill(skill) if built == "built" else built)
+        outcomes.append(converge_skill(skill, names, expected_hash))
         # Later skills build on the earlier ones; stop rather than build on sand.
         if outcomes[-1] in TERMINAL_NAMES:
             break

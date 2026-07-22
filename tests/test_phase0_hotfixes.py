@@ -26,17 +26,17 @@ class RetryBudget(ConductorTestCase):
         self.assertEqual(conductor.attempts_used("demo-skill"), conductor.BUILD_ATTEMPT_CAP)
         self.assertIn("demo-skill", self.log_text())
 
-    def test_a_successful_build_clears_the_counter(self):
-        sdir = self.skill_dir("demo-skill", {"BUILD_BRIEF.md": "build it", "eval/eval.yaml": EVAL_YAML})
+    def test_the_counter_spans_builds_and_refines_and_resets_on_confirm(self):
+        # Phase 1 shares this budget with the refine loop, so a successful build
+        # is not the reset point — a gate pass or a new confirmed version is.
+        self.skill_dir("demo-skill", {"BUILD_BRIEF.md": "build it", "eval/eval.yaml": EVAL_YAML})
         conductor.record_attempt("demo-skill")
+        conductor.record_attempt("demo-skill")
+        self.assertEqual(conductor.attempts_used("demo-skill"), 2)
 
-        def build(cmd, kwargs):
-            with open(os.path.join(sdir, "SKILL.md"), "w") as f:
-                f.write("# skill")
-            return 0
+        path = self.proposal()
+        conductor.confirm_proposal(path, {"skills": ["demo-skill"]})
 
-        self.patch_run(FakeRun(on_call=build))
-        self.assertEqual(conductor.build_skill("demo-skill"), "built")
         self.assertEqual(conductor.attempts_used("demo-skill"), 0)
 
 
