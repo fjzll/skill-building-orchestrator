@@ -1,0 +1,55 @@
+name: fleet-calibration
+
+# Pulls every client's triage-calibration ledger into per-archetype fleet files
+# and recomputes the priors a new client inherits at `orch init`.
+#
+# Client identity is retained on each line, but the operative key is the
+# archetype: a verdict is evidence about a shape of work, not about a client.
+
+on:
+  schedule:
+    - cron: "0 3 * * 1"   # Mondays, 03:00 UTC
+  workflow_dispatch:
+
+jobs:
+  aggregate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pyyaml
+
+      - name: Clone every registered client (read-only)
+        env:
+          GH_TOKEN: ${{ secrets.FLEET_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p .fleet-clients
+          python3 - <<'EOF' > /tmp/repos.txt
+          import os, yaml
+          registry = yaml.safe_load(open("clients.yaml")) if os.path.exists("clients.yaml") else None
+          for c in (registry or {}).get("clients") or []:
+              print(c["slug"], c["repo"])
+          EOF
+          while read -r slug repo; do
+            gh repo clone "$repo" ".fleet-clients/$slug" -- --depth 1 --quiet || true
+          done < /tmp/repos.txt
+
+      - name: Aggregate and recompute priors
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          clients=(.fleet-clients/*)
+          if [ ${#clients[@]} -eq 0 ]; then echo "no client clones — nothing to aggregate"; exit 0; fi
+          python3 runner/fleet.py aggregate fleet "${clients[@]}"
+          python3 runner/fleet.py priors fleet -o fleet/priors.yaml
+          rm -rf .fleet-clients
+
+      - name: Commit the fleet record
+        run: |
+          git config user.name "orchestrator-bot"
+          git config user.email "bot@transcendai.com.au"
+          git add fleet
+          git diff --cached --quiet || git commit -m "fleet: refresh calibration aggregate and priors [skip ci]"
+          git push

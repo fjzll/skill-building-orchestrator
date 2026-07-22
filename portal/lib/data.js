@@ -2,23 +2,29 @@ import fs from "fs";
 import path from "path";
 import yaml from "js-yaml";
 
-// Repo root: portal/ sits inside the orchestrator repo
-const ROOT = process.env.ORCH_ROOT || path.join(process.cwd(), "..");
+// Repo root: portal/ sits inside the orchestrator repo.
+// The fleet view reads other client repos through the same parsers, so the root
+// is a function with a temporary override rather than a constant. Safe because
+// every override window (readAt) is fully synchronous — there is no await inside
+// it for another request to interleave on.
+const DEFAULT_ROOT = process.env.ORCH_ROOT || path.join(process.cwd(), "..");
+const ROOT_OVERRIDE = { value: null };
+function root() { return ROOT_OVERRIDE.value || DEFAULT_ROOT; }
 
 function safeYaml(p) {
   try { return yaml.load(fs.readFileSync(p, "utf8")); } catch { return null; }
 }
 
 export function getFacts() {
-  return safeYaml(path.join(ROOT, "analysis", "facts.yaml"));
+  return safeYaml(path.join(root(), "analysis", "facts.yaml"));
 }
 
 export function getWorkflowMap() {
-  return safeYaml(path.join(ROOT, "build-plans", "workflow-map.yaml"));
+  return safeYaml(path.join(root(), "build-plans", "workflow-map.yaml"));
 }
 
 export function getLedger() {
-  const dir = path.join(ROOT, "ledger");
+  const dir = path.join(root(), "ledger");
   if (!fs.existsSync(dir)) return [];
   return fs.readdirSync(dir).filter(f => f.endsWith(".md")).sort().map(f => ({
     name: f,
@@ -34,7 +40,7 @@ export function skillsOf(meta) {
 // The executable half of the contract. Rendered inline on the proposal so that
 // one Confirm approves the prose test definition AND the suite that enforces it.
 export function getEvalSuite(skill) {
-  const dir = path.join(ROOT, "skills", skill);
+  const dir = path.join(root(), "skills", skill);
   const configPath = path.join(dir, "eval", "eval.yaml");
   const fixturesDir = path.join(dir, "fixtures");
   let fixtures = [];
@@ -52,7 +58,7 @@ export function getEvalSuite(skill) {
 }
 
 export function getProposals() {
-  const dir = path.join(ROOT, "proposals");
+  const dir = path.join(root(), "proposals");
   if (!fs.existsSync(dir)) return [];
   return fs.readdirSync(dir)
     .filter(f => f.endsWith(".md") && f !== "TEMPLATE.md")
@@ -230,7 +236,7 @@ export function getBlockers() {
 // ---------- Triage verdicts (the LLM's diagnosis, awaiting a human verdict) ----------
 
 export function getTriageVerdicts() {
-  const dir = path.join(ROOT, "skills");
+  const dir = path.join(root(), "skills");
   if (!fs.existsSync(dir)) return [];
   const out = [];
   for (const skill of fs.readdirSync(dir).sort()) {
@@ -248,8 +254,40 @@ export function getTriageVerdicts() {
   return out;
 }
 
+// ---------- Fleet view (read-only across N client repos) ----------
+
+// ORCH_FLEET_ROOTS is a colon-separated list of client repo paths. Unset means
+// this portal is running for a single client, which is the normal case.
+export function fleetRoots() {
+  return (process.env.ORCH_FLEET_ROOTS || "").split(":").map(s => s.trim()).filter(Boolean);
+}
+
+function readAt(root, fn) {
+  const previous = ROOT_OVERRIDE.value;
+  ROOT_OVERRIDE.value = root;
+  try { return fn(); } finally { ROOT_OVERRIDE.value = previous; }
+}
+
+export function getFleet() {
+  return fleetRoots().map(root => readAt(root, () => {
+    const config = safeYaml(path.join(root, "client.yaml")) || {};
+    const proposals = getProposals();
+    const verdicts = getTriageVerdicts();
+    return {
+      root,
+      slug: config.slug || path.basename(root),
+      displayName: config.display_name || path.basename(root),
+      templateCommit: config.template_commit || "unknown",
+      proposals: proposals.map(p => ({ name: p.name, status: p.meta.status || "draft" })),
+      blockers: getBlockers().filter(b => b.status === "open").length,
+      awaitingTriage: verdicts.filter(v => !v.meta.human).length,
+      skills: getSkills().filter(s => !s.name.startsWith("_")).length,
+    };
+  }));
+}
+
 export function getSkills() {
-  const dir = path.join(ROOT, "skills");
+  const dir = path.join(root(), "skills");
   if (!fs.existsSync(dir)) return [];
   return fs.readdirSync(dir).filter(f => fs.statSync(path.join(dir, f)).isDirectory()).sort().map(name => {
     const scorePath = path.join(dir, name, "eval", "scorecard.json");

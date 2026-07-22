@@ -30,6 +30,15 @@ portal_title: Skill Implementation — $NAME
 template_commit: $TEMPLATE_COMMIT
 EOF
     echo "wrote client.yaml (slug=$SLUG, display_name=$NAME, template_commit=$TEMPLATE_COMMIT)"
+    # Seed calibration priors from fleet evidence, if this template carries any.
+    # A well-evidenced archetype starts this client at an earned autonomy phase
+    # instead of grinding out its own ten agreements for the same shape of work.
+    if [ -d fleet/calibration ]; then
+      python3 runner/fleet.py priors fleet -o analysis/fleet-priors.yaml \
+        && echo "seeded analysis/fleet-priors.yaml from fleet evidence"
+    else
+      echo "no fleet evidence in this template — calibration starts at phase 0 (shadow)"
+    fi
     ;;
   up)
     echo "▶ starting conductor (background, log: analysis/conductor.log)"

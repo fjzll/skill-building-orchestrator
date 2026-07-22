@@ -1,0 +1,82 @@
+name: convention-mining
+
+# Quarterly: collect the "Decisions" and "Rejected alternatives / why-nots"
+# sections from every client ledger, cluster the recurring ones, and draft
+# promotions into the template's ledger/000-conventions.md and the grill
+# protocol's hypothesis list.
+#
+# This is methodology evolution — the consulting IP flywheel — so it opens a
+# PR for human review and is NEVER applied automatically. A convention that
+# promoted itself would be a decision nobody made.
+
+on:
+  schedule:
+    - cron: "0 4 1 1,4,7,10 *"   # first day of each quarter
+  workflow_dispatch:
+
+jobs:
+  mine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pyyaml
+
+      - name: Collect ledgers from every registered client
+        env:
+          GH_TOKEN: ${{ secrets.FLEET_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p .fleet-ledgers
+          python3 - <<'EOF' > /tmp/repos.txt
+          import os, yaml
+          registry = yaml.safe_load(open("clients.yaml")) if os.path.exists("clients.yaml") else None
+          for c in (registry or {}).get("clients") or []:
+              print(c["slug"], c["repo"])
+          EOF
+          while read -r slug repo; do
+            tmp=$(mktemp -d)
+            gh repo clone "$repo" "$tmp" -- --depth 1 --quiet || continue
+            mkdir -p ".fleet-ledgers/$slug"
+            cp "$tmp"/ledger/*.md ".fleet-ledgers/$slug/" 2>/dev/null || true
+            rm -rf "$tmp"
+          done < /tmp/repos.txt
+
+      - name: Draft promotions
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ANTHROPIC_API_KEY:-}" ]; then echo "no API key — skipping"; exit 0; fi
+          npm install -g @anthropic-ai/claude-code >/dev/null 2>&1 || true
+          claude -p "Read every ledger under .fleet-ledgers/ (one directory per client).
+          Find decisions and why-nots that recur across THREE OR MORE clients — those are
+          candidates for promotion into this template's ledger/000-conventions.md item 8
+          defaults and docs/grill-protocol.md hypotheses.
+
+          Write proposals/convention-promotions-\$(date +%Y-%m).md containing, for each
+          candidate: the convention as it would be written in the template, the clients it
+          was observed at with a quoted line from each, and an explicit argument for why it
+          generalizes rather than being three clients in the same industry. Include a
+          'Rejected candidates' section for recurring decisions you judged client-specific,
+          with reasons.
+
+          Change nothing else. Do not edit the ledger or the grill protocol — this is a
+          draft for human review." --output-format json || true
+          rm -rf .fleet-ledgers
+
+      - name: Open the review PR
+        run: |
+          set -euo pipefail
+          git config user.name "orchestrator-bot"
+          git config user.email "bot@transcendai.com.au"
+          git checkout -b "convention-mining-$(date +%Y-%m)"
+          git add proposals || true
+          git diff --cached --quiet && { echo "nothing drafted"; exit 0; }
+          git commit -qm "convention mining: draft promotions for review"
+          git push -q origin HEAD
+          gh pr create --title "Convention promotions — $(date +%Y-%m)" \
+            --body "Drafted from cross-client ledgers. Human review required: promoting a convention changes the methodology every future client inherits." || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getFacts, getWorkflowMap, getLedger, getProposals, getSkills, getBlockers, getGrillOrderProgress, getTriageVerdicts } from "../lib/data";
+import { getFacts, getWorkflowMap, getLedger, getProposals, getSkills, getBlockers, getGrillOrderProgress, getTriageVerdicts, getFleet } from "../lib/data";
 import ProposalActions from "./proposal-actions";
 import TriageActions from "./triage-actions";
 
@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 
 const TABS = [
   ["overview", "Overview"],
+  ["fleet", "Fleet"],
   ["proposals", "Proposals"],
   ["ledger", "Ledger"],
   ["builds", "Build Status"],
@@ -113,6 +114,50 @@ function EvalSuites({ suites, frozen }) {
         </div>
       ))}
     </div>
+  );
+}
+
+// Read-only in v1: the fleet view is a lens over N client repos, and every
+// action still belongs in the client repo that owns the decision.
+function Fleet() {
+  const clients = getFleet();
+  return (
+    <>
+      <Hero sub="Every client repo at a glance — statuses, blockers, and verdicts awaiting a human." />
+      {clients.length === 0 && (
+        <div className="card"><h2>No fleet configured</h2>
+          <p className="muted">Set <code>ORCH_FLEET_ROOTS</code> to a colon-separated list of client
+            repo paths and restart the portal. Unset means this portal serves one client, which is
+            the normal case.</p></div>
+      )}
+      {clients.length > 0 && (
+        <div className="card">
+          <h2>Clients <span className="chip grey">{clients.length}</span></h2>
+          <table><thead><tr>
+            <th>Client</th><th>Skills</th><th>Proposals</th><th>Open blockers</th>
+            <th>Triage awaiting review</th><th>Template</th>
+          </tr></thead><tbody>
+            {clients.map(c => (
+              <tr key={c.slug}>
+                <td><b>{c.displayName}</b></td>
+                <td>{c.skills}</td>
+                <td>{c.proposals.map(p => (
+                  <span key={p.name} className={"chip " + (STATUS_CHIP[p.status] || "grey")}
+                    style={{ marginRight: 4 }}>{p.status}</span>
+                ))}</td>
+                <td>{c.blockers > 0
+                  ? <span className="chip amber">{c.blockers}</span>
+                  : <span className="chip green">0</span>}</td>
+                <td>{c.awaitingTriage > 0
+                  ? <span className="chip amber">{c.awaitingTriage}</span>
+                  : <span className="chip green">0</span>}</td>
+                <td><span className="chip grey">{String(c.templateCommit).slice(0, 12)}</span></td>
+              </tr>
+            ))}
+          </tbody></table>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -308,7 +353,8 @@ export default async function Page({ searchParams }) {
             className={"tab" + (tab === id ? " active" : "")}>{label}</Link>
         ))}
       </div>
-      {tab === "proposals" ? <Proposals />
+      {tab === "fleet" ? <Fleet />
+        : tab === "proposals" ? <Proposals />
         : tab === "ledger" ? <Ledger />
         : tab === "builds" ? <Builds />
         : tab === "scorecards" ? <Scorecards />

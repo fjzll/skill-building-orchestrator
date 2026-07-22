@@ -1,0 +1,14 @@
+# Registry of client repos built from this template. Lives in the TEMPLATE repo
+# only — a client clone does not carry it. Copy to clients.yaml and fill in.
+#
+# The upgrade bot opens one PR per entry on each template release, containing
+# only the engine-path diff (runner/ evals/ portal/ docs/ tests/ .github/ orch)
+# between that client's recorded template_commit and the release. Client data
+# paths — ledger, proposals, skills, build-plans, deep-dives, analysis — are
+# never included, so merging an upgrade cannot touch a client's decisions.
+
+clients:
+  - slug: acme
+    repo: your-org/skill-building-acme
+  - slug: globex
+    repo: your-org/skill-building-globex

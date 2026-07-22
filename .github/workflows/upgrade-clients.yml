@@ -1,0 +1,105 @@
+name: upgrade-clients
+
+# Template releases reach client repos as reviewable PRs. Merging the PR *is*
+# the migration — review effort scales with the size of the change, not with the
+# number of clients. This replaces the manual cherry-pick workflow.
+#
+# Requires a FLEET_TOKEN secret with `repo` scope on the client repos.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Template ref to roll out (defaults to the current one)"
+        required: false
+
+jobs:
+  open-upgrade-prs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pyyaml
+
+      - name: Read the client registry
+        id: registry
+        run: |
+          python3 - <<'EOF' >> "$GITHUB_OUTPUT"
+          import json, os, yaml
+          registry = yaml.safe_load(open("clients.yaml")) if os.path.exists("clients.yaml") else None
+          clients = (registry or {}).get("clients") or []
+          print("clients=" + json.dumps(clients))
+          EOF
+
+      - name: Open one upgrade PR per client
+        if: steps.registry.outputs.clients != '[]'
+        env:
+          GH_TOKEN: ${{ secrets.FLEET_TOKEN }}
+          RELEASE: ${{ github.event.inputs.ref || github.sha }}
+        run: |
+          set -euo pipefail
+          # Engine paths only — mirrors ENGINE_PATHS in runner/fleet.py.
+          ENGINE="runner/ evals/ portal/ docs/ tests/ .github/ orch"
+          echo '${{ steps.registry.outputs.clients }}' | python3 -c "
+          import json,sys
+          for c in json.load(sys.stdin): print(c['slug'], c['repo'])
+          " | while read -r slug repo; do
+            echo "== $slug ($repo)"
+            workdir=$(mktemp -d)
+            gh repo clone "$repo" "$workdir" -- --quiet || { echo "clone failed, skipping"; continue; }
+
+            base=$(python3 -c "
+          import yaml; print((yaml.safe_load(open('$workdir/client.yaml')) or {}).get('template_commit','') or '')
+          ")
+            if [ -z "$base" ] || [ "$base" = "unknown" ]; then
+              echo "no template_commit recorded — skipping (set it manually once)"
+              continue
+            fi
+            if [ "$base" = "$RELEASE" ]; then
+              echo "already current"
+              continue
+            fi
+
+            branch="template-upgrade-${RELEASE:0:12}"
+            git -C "$workdir" checkout -q -b "$branch"
+
+            # Apply only the engine-path diff. Client data is never in the patch.
+            if ! git diff "$base".."$RELEASE" -- $ENGINE > "$workdir/upgrade.patch"; then
+              echo "diff failed — is $base an ancestor of $RELEASE?"; continue
+            fi
+            if [ ! -s "$workdir/upgrade.patch" ]; then
+              echo "no engine changes"; continue
+            fi
+            git -C "$workdir" apply --3way "$workdir/upgrade.patch" || {
+              echo "patch did not apply cleanly — opening the PR anyway with conflict markers is worse than skipping"
+              continue
+            }
+            rm "$workdir/upgrade.patch"
+
+            python3 - "$workdir/client.yaml" "$RELEASE" <<'EOF'
+          import sys, yaml
+          path, release = sys.argv[1], sys.argv[2]
+          config = yaml.safe_load(open(path)) or {}
+          config["template_commit"] = release
+          yaml.safe_dump(config, open(path, "w"), sort_keys=False)
+          EOF
+
+            git -C "$workdir" config user.name "orchestrator-bot"
+            git -C "$workdir" config user.email "bot@transcendai.com.au"
+            git -C "$workdir" add -A
+            git -C "$workdir" commit -qm "Template upgrade to ${RELEASE:0:12}
+
+          Engine paths only ($ENGINE). Client data — ledger, proposals, skills,
+          build-plans, deep-dives, analysis — is untouched by construction."
+            git -C "$workdir" push -q origin "$branch"
+            gh pr create --repo "$repo" --head "$branch" \
+              --title "Template upgrade to ${RELEASE:0:12}" \
+              --body "Automated engine upgrade. Only template-owned paths are changed; client decisions are untouched. Review the diff and merge — merging this PR *is* the migration." \
+              || echo "PR already open"
+            rm -rf "$workdir"
+          done

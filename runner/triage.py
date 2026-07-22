@@ -118,13 +118,22 @@ def consecutive_agreements(root, verdict_class):
     return streak
 
 
-def is_automated(root, verdict_class):
-    """Has this class earned autonomy yet? Read from data, not a config flag."""
+def is_automated(root, verdict_class, archetype=None):
+    """Has this class earned autonomy yet? Read from data, not a config flag.
+
+    Two sources, in that order: this repo's own agreement streak, then — for a
+    known archetype — fleet priors seeded at `orch init`. Priors only ever set a
+    *starting* phase; `fleet.prior_grants` refuses once this repo has disagreed
+    about that archetype, so local evidence always wins.
+    """
     if verdict_class not in AUTOMATABLE_CLASSES:
         return False
-    if verdict_class == "implementation" and not is_automated(root, "transient"):
+    if verdict_class == "implementation" and not is_automated(root, "transient", archetype):
         return False  # the ramp is ordered: transient first, then implementation
-    return consecutive_agreements(root, verdict_class) >= AUTONOMY_BAR
+    if consecutive_agreements(root, verdict_class) >= AUTONOMY_BAR:
+        return True
+    from fleet import prior_grants
+    return prior_grants(root, verdict_class, archetype)
 
 
 def calibration_phase(root):

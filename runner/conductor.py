@@ -37,7 +37,8 @@ from concurrent.futures import ThreadPoolExecutor
 from shutil import which
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from client_config import require_client_config
+from archetype import archetype
+from client_config import load_client_config, require_client_config
 from fm import read_fm, set_fm
 from eval_suite import config_path, skills_missing_suite, suite_hash
 import triage as triage_lib
@@ -447,6 +448,11 @@ TRIAGE_TRIGGERS = {
 }
 TICK_ERROR_TRIGGER_THRESHOLD = 3
 
+def skill_archetype(skill):
+    """The fleet-wide key for this skill — what inherited priors are keyed on."""
+    client = (load_client_config(ROOT) or {}).get("slug")
+    return archetype(skill, client, triage_lib.workflow_of(ROOT, skill))
+
 def triage_applied_file(skill):
     return os.path.join(ROOT, "skills", skill, ".triage-applied")
 
@@ -462,7 +468,7 @@ def apply_verdict(skill, verdict):
     so an auto-retry can never become its own retry bomb.
     """
     verdict_class = verdict.get("class")
-    if not triage_lib.is_automated(ROOT, verdict_class):
+    if not triage_lib.is_automated(ROOT, verdict_class, skill_archetype(skill)):
         return False
     if triage_already_applied(skill):
         log(f"triage {skill}: {verdict_class} verdict not applied — already auto-retried this version")
