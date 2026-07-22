@@ -25,6 +25,9 @@ jobs:
                   print(f'FAIL {p}: {e}'); bad += 1
           sys.exit(1 if bad else 0)
           EOF
+      - name: Unit tests
+        run: python3 -m unittest discover -s tests -t tests
+
       - name: Facts pass
         run: python3 runner/facts_extractor.py .
       - name: Run evals for all skills with eval configs

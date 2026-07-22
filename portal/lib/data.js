@@ -52,6 +52,7 @@ const PROPOSAL_PROGRESS = {
   revised: { label: "Proposal review", chip: "amber", priority: 2 },
   confirmed: { label: "Build queued", chip: "purple", priority: 3 },
   building: { label: "Building", chip: "amber", priority: 4 },
+  blocked: { label: "Blocked", chip: "red", priority: 5 },
   tested: { label: "Complete", chip: "green", priority: 5 },
   "build-failed": { label: "Build failed", chip: "red", priority: 5 },
 };
@@ -174,6 +175,20 @@ export function getBlockers() {
         kind: "build", source: p.name, workflow,
         item: "Build failed — see scorecards and analysis/conductor.log",
         category: "system", status: "open", detail: "conductor halted this proposal",
+      });
+    }
+    if (p.meta.status === "blocked") {
+      items.push({
+        kind: "build", source: p.name, workflow,
+        item: "Blocked — a skill is missing its confirmed eval/eval.yaml",
+        category: "system", status: "open", detail: "conductor cannot test this proposal",
+      });
+    }
+    if (p.meta.status === "changes-requested") {
+      items.push({
+        kind: "contract", source: p.name, workflow,
+        item: "Change request raised — the contract, not the build, needs a decision",
+        category: "system", status: "open", detail: "see skills/<skill>/CHANGE_REQUEST.md",
       });
     }
     if ((p.meta.status || "").startsWith("stale") || p.meta.stale) {

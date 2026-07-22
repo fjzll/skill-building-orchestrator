@@ -4,3 +4,7 @@ __pycache__/
 *.pyc
 .DS_Store
 client.yaml
+.venv/
+analysis/.conductor-lock
+analysis/.conductor-pid
+analysis/.facts-stamp

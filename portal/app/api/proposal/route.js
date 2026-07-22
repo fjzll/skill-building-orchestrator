@@ -4,6 +4,14 @@ import { NextResponse } from "next/server";
 
 const ROOT = process.env.ORCH_ROOT || path.join(process.cwd(), "..");
 
+// Mirrors runner/fm.py write_atomic: a conductor tick reading mid-write must
+// see either the old file or the new one, never a truncated one.
+function writeAtomic(file, content) {
+  const tmp = path.join(path.dirname(file), `.portal-${process.pid}-${Date.now()}.tmp`);
+  fs.writeFileSync(tmp, content);
+  fs.renameSync(tmp, file);
+}
+
 function setFrontmatter(content, key, value) {
   const m = content.match(/^---\n([\s\S]*?)\n---/);
   if (!m) return content;
@@ -25,12 +33,12 @@ export async function POST(req) {
 
   if (action === "confirm") {
     content = setFrontmatter(content, "status", "confirmed");
-    fs.writeFileSync(p, content);
+    writeAtomic(p, content);
     return NextResponse.json({ ok: true, status: "confirmed" });
   }
   if (action === "request-changes") {
     content = setFrontmatter(content, "status", "changes-requested");
-    fs.writeFileSync(p, content);
+    writeAtomic(p, content);
     // anchored review file the orchestrator picks up (structural vs cosmetic triage happens there)
     const reviewDir = path.join(ROOT, "proposals", "reviews");
     fs.mkdirSync(reviewDir, { recursive: true });

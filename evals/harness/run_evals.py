@@ -22,11 +22,16 @@ Per-skill config: skills/<skill>/eval/eval.yaml
     threshold_avg: 4.25   # of 5  (== 85%)
     floor: 3
     runs: 3
+    model: claude-sonnet-5        # optional; JUDGE_MODEL default
 Gate policy: layers 1-2 at 100%; layer 3 avg >= threshold_avg and min >= floor.
 """
 import sys, os, json, re
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Judge model. Per-skill override: eval.yaml layer3.model — so a model change is
+# config, not a code edit.
+JUDGE_MODEL = "claude-sonnet-5"
 
 NUM_RE = re.compile(r"(?<![\d.])(\d{1,3}(?:,\d{3})+|\d+\.\d+|\d+)(?!\d)")
 
@@ -88,7 +93,7 @@ def layer3(cfg, output_text, fixtures_text):
     )
     for _ in range(runs):
         body = json.dumps({
-            "model": "claude-sonnet-5",
+            "model": cfg.get("model", JUDGE_MODEL),
             "max_tokens": 1024,
             "messages": [{"role": "user", "content": prompt}],
         }).encode()
@@ -105,7 +110,12 @@ def layer3(cfg, output_text, fixtures_text):
                 scores[k].append(v)
     avg = {k: (sum(v) / len(v) if v else 0) for k, v in scores.items()}
     overall = sum(avg.values()) / len(avg) if avg else 0
-    return {"status": "run", "runs": runs, "avg_per_criterion": avg, "overall_avg": overall}
+    # Spread across runs is kept for judge calibration analysis — a criterion the
+    # judge scores inconsistently is not yet trustworthy as a gate.
+    spread = {k: (max(v) - min(v) if v else 0) for k, v in scores.items()}
+    return {"status": "run", "runs": runs, "model": cfg.get("model", JUDGE_MODEL),
+            "avg_per_criterion": avg, "spread_per_criterion": spread,
+            "scores_per_criterion": scores, "overall_avg": overall}
 
 def main(skill):
     skill_dir = os.path.join(ROOT, "skills", skill)

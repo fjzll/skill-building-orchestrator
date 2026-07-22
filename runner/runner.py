@@ -20,26 +20,19 @@ Usage:
   python3 runner/runner.py build <skill>   # kick off a headless build (stub if no key)
   python3 runner/runner.py test <skill>    # run the eval harness for a skill
 """
-import sys, os, glob, subprocess, json, re
+import sys, os, glob, subprocess, json
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from client_config import require_client_config
+from fm import read_fm
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def frontmatter(path):
-    meta = {}
     try:
-        txt = open(path).read()
+        return read_fm(path)[0]
     except OSError:
-        return meta
-    m = re.match(r"^---\n(.*?)\n---", txt, re.S)
-    if m:
-        for line in m.group(1).splitlines():
-            if ":" in line:
-                k, v = line.split(":", 1)
-                meta[k.strip()] = v.strip()
-    return meta
+        return {}
 
 def proposals():
     out = []
@@ -47,7 +40,6 @@ def proposals():
         if os.path.basename(p) == "TEMPLATE.md":
             continue
         meta = frontmatter(p)
-        meta = {k: v.split("#")[0].strip() for k, v in meta.items()}
         out.append({"file": os.path.basename(p),
                     "workflow": meta.get("workflow", "?"),
                     "status": meta.get("status", "draft"),

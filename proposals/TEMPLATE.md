@@ -1,7 +1,7 @@
 ---
 workflow: <workflow-id>
 client: <CLIENT>        # client identifier
-status: proposed        # proposed | changes-requested | revised | confirmed | building | tested | build-failed
+status: proposed        # proposed | changes-requested | revised | confirmed | building | tested | build-failed | blocked
 version: 1
 ledger_entries: [<NNN-slug>]
 skills: [<client>-shared-<dep>, <client>-<workflow>-<skill>]   # build order: shared deps first — the conductor builds these
