@@ -1,6 +1,9 @@
-# Failure triage — LLM recovery hook for the conductor (design)
+# Failure triage — LLM recovery hook for the conductor
 
-**Status:** designed 11-Jul-2026, not yet implemented. Motivated by the
+**Status:** designed 11-Jul-2026, implemented 22-Jul-2026 (`runner/triage.py`,
+`docs/triage-prompt.md`, conductor trigger points, portal review UI). Two
+implementation decisions this document did not pin down are recorded at the
+bottom under "As built". Motivated by the
 orchestrator comparison with Ash (see
 `../../comparation-of-orchestrator-for-skill-production/round-two-discussion-notes.md`):
 a deterministic conductor fails loud but dumb. This hook adds LLM reasoning at
@@ -79,6 +82,29 @@ can't change the contract; neither can its triage.
 Agreement ledger: `analysis/triage-calibration.jsonl` (one line per verdict:
 skill, class, human agree/disagree). The conductor reads counts from here to
 decide the phase per class — no config flag to flip by hand, the data flips it.
+
+## As built (22-Jul-2026)
+
+Two things the design left open, and what was decided:
+
+**1. What "auto-apply" actually does.** A verdict whose class has earned
+autonomy causes exactly one thing: the skill's attempt budget is cleared, so
+the deterministic build/refine loop gets one more bounded run at the problem.
+That is what a human does when they agree with a `transient` or
+`implementation` verdict, and it keeps the LLM out of the execution path — it
+diagnoses, the scheduler acts. A one-shot marker (`.triage-applied`, cleared on
+the next confirmation) means an auto-retry can never become its own retry bomb.
+The Phase 1 refine loop remains unconditional and deterministic; triage does
+not gate it, and shadow mode therefore costs no capability.
+
+**2. The ramp is ordered.** `implementation` cannot reach auto before
+`transient` has. The bar is 10 consecutive agreements per class either way, but
+a repo cannot skip to the more consequential automation on the strength of
+implementation agreements alone.
+
+Trigger 4 (repeated tick exception) writes its verdict to
+`analysis/TRIAGE-tick.md` rather than a skill directory — a tick error is not
+attributable to one skill.
 
 ## Implementation notes (~small)
 

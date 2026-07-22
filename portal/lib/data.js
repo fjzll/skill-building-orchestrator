@@ -227,6 +227,27 @@ export function getBlockers() {
   return items;
 }
 
+// ---------- Triage verdicts (the LLM's diagnosis, awaiting a human verdict) ----------
+
+export function getTriageVerdicts() {
+  const dir = path.join(ROOT, "skills");
+  if (!fs.existsSync(dir)) return [];
+  const out = [];
+  for (const skill of fs.readdirSync(dir).sort()) {
+    const file = path.join(dir, skill, "TRIAGE.md");
+    if (!fs.existsSync(file)) continue;
+    const content = fs.readFileSync(file, "utf8");
+    const m = content.match(/^---\n([\s\S]*?)\n---/);
+    const meta = {};
+    if (m) for (const line of m[1].split("\n")) {
+      const i = line.indexOf(":");
+      if (i > 0) meta[line.slice(0, i).trim()] = line.slice(i + 1).split("#")[0].trim();
+    }
+    out.push({ skill, meta, body: content.replace(/^---[\s\S]*?---\n/, "") });
+  }
+  return out;
+}
+
 export function getSkills() {
   const dir = path.join(ROOT, "skills");
   if (!fs.existsSync(dir)) return [];

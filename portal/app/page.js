@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { getFacts, getWorkflowMap, getLedger, getProposals, getSkills, getBlockers, getGrillOrderProgress } from "../lib/data";
+import { getFacts, getWorkflowMap, getLedger, getProposals, getSkills, getBlockers, getGrillOrderProgress, getTriageVerdicts } from "../lib/data";
 import ProposalActions from "./proposal-actions";
+import TriageActions from "./triage-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -209,6 +210,41 @@ function Scorecards() {
   );
 }
 
+const TRIAGE_CLASS_CHIP = {
+  transient: "amber", implementation: "purple", contract: "red", environment: "red",
+};
+
+// A verdict is a diagnosis awaiting a human. Agreeing is also the calibration
+// signal — which is why the review lives here rather than in a separate view.
+function TriageVerdicts() {
+  const verdicts = getTriageVerdicts();
+  if (verdicts.length === 0) return null;
+  const pending = verdicts.filter(v => !v.meta.human);
+  return (
+    <div className="card">
+      <h2>Triage verdicts <span className="chip grey">{pending.length} awaiting review</span></h2>
+      <p className="muted">
+        Each verdict is the conductor&apos;s diagnosis of a failure, not an action taken. Agreeing or
+        disagreeing writes the calibration line that decides whether this failure class earns autonomy.
+        <b> contract</b> and <b>environment</b> never automate.
+      </p>
+      {verdicts.map(v => (
+        <div key={v.skill} style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--color-border)" }}>
+          <h3>{v.skill}{" "}
+            <span className={"chip " + (TRIAGE_CLASS_CHIP[v.meta.class] || "grey")}>{v.meta.class}</span>{" "}
+            <span className="chip grey">{v.meta.action}</span>{" "}
+            <span className="chip grey">confidence: {v.meta.confidence}</span>{" "}
+            <span className={"chip " + (v.meta.autonomy === "applied" ? "purple" : "amber")}>
+              {v.meta.autonomy === "applied" ? "auto-applied" : "proposed"}</span>
+          </h3>
+          <pre className="md">{v.body}</pre>
+          <TriageActions skill={v.skill} verdictClass={v.meta.class} human={v.meta.human} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function Blockers() {
   const items = getBlockers();
   const open = items.filter(i => i.status === "open");
@@ -222,6 +258,7 @@ function Blockers() {
         <b>{open.length}</b> open · <b>{closed.length}</b> resolved/superseded ·
         Sources: proposals/*.md (nothing lives only here — resolve items by amending the proposal + ledger)
       </div>
+      <TriageVerdicts />
       {items.length === 0 && (
         <div className="card"><h2>No blockers recorded</h2>
           <p className="muted">Blockers and assumptions are written into proposals at grill time; build failures and stale flags come from the conductor.</p></div>

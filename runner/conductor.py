@@ -39,6 +39,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from client_config import require_client_config
 from fm import read_fm, set_fm
 from eval_suite import config_path, skills_missing_suite, suite_hash
+import triage as triage_lib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOG = os.path.join(ROOT, "analysis", "conductor.log")
@@ -321,8 +322,10 @@ def confirm_proposal(path, meta):
         log(f"{name}: BLOCKED — no confirmed eval/eval.yaml for: {', '.join(missing)}")
         return "blocked"
     frozen = suite_hash(ROOT, names)
-    for skill in names:  # the budget is per skill per proposal version
+    for skill in names:  # budget and auto-retry allowance are per proposal version
         clear_attempts(skill)
+        if os.path.exists(triage_applied_file(skill)):
+            os.unlink(triage_applied_file(skill))
     set_fm(path, "eval_hash", frozen)
     set_fm(path, "status", "building")
     log(f"{name}: confirmed -> building ({len(names)} skills, eval_hash {frozen[:12]})")
@@ -337,9 +340,13 @@ def advance_proposal(path, meta):
     expected_hash = meta.get("eval_hash")
     outcomes = []
     for skill in names:  # proposal lists shared deps first by convention
-        outcomes.append(converge_skill(skill, names, expected_hash))
+        outcome = converge_skill(skill, names, expected_hash)
+        if outcome in TRIAGE_TRIGGERS and triage_failure(skill, outcome):
+            # The verdict's class has earned autonomy: one more bounded run.
+            outcome = converge_skill(skill, names, expected_hash)
+        outcomes.append(outcome)
         # Later skills build on the earlier ones; stop rather than build on sand.
-        if outcomes[-1] in TERMINAL_NAMES:
+        if outcome in TERMINAL_NAMES:
             break
     for outcome, status in TERMINAL_OUTCOMES:
         if outcome in outcomes:
@@ -362,6 +369,90 @@ def stage_proposals():
         if status == "building":
             advance_proposal(p, meta)
 
+# ---------- triage (LLM at failure points only) ----------
+# Which outcome triggers a triage session, and the trigger name recorded in the
+# verdict. These are the four trigger points from docs/failure-triage.md.
+TRIAGE_TRIGGERS = {
+    "exhausted": "build FAILED — attempt budget exhausted",
+    "change-request": "builder wrote CHANGE_REQUEST.md",
+    "blocked": "eval gate could not run or failure was environment-shaped",
+    "tampered": "attempt modified the confirmed test suite",
+}
+TICK_ERROR_TRIGGER_THRESHOLD = 3
+
+def triage_applied_file(skill):
+    return os.path.join(ROOT, "skills", skill, ".triage-applied")
+
+def triage_already_applied(skill):
+    return os.path.exists(triage_applied_file(skill))
+
+def apply_verdict(skill, verdict):
+    """Act on a verdict whose class has earned autonomy. Returns True if applied.
+
+    The action is deliberately one thing: hand the deterministic loop one more
+    bounded run at the problem — which is what a human does when they agree with
+    a transient or implementation verdict. Once per skill per proposal version,
+    so an auto-retry can never become its own retry bomb.
+    """
+    verdict_class = verdict.get("class")
+    if not triage_lib.is_automated(ROOT, verdict_class):
+        return False
+    if triage_already_applied(skill):
+        log(f"triage {skill}: {verdict_class} verdict not applied — already auto-retried this version")
+        return False
+    clear_attempts(skill)
+    with open(triage_applied_file(skill), "w") as f:
+        f.write(verdict_class)
+    set_fm(triage_lib.verdict_path(ROOT, skill), "autonomy", "applied")
+    log(f"triage {skill}: {verdict_class} verdict APPLIED — budget restored for one more run")
+    return True
+
+def run_triage_session(subject, trigger, evidence, output_relpath):
+    """One sealed triage subprocess. Writes a verdict file; changes nothing else."""
+    prompt = triage_lib.build_prompt(ROOT, subject, trigger, evidence, output_relpath)
+    subprocess.run(["claude", "-p", prompt, "--output-format", "json"],
+                   cwd=ROOT, capture_output=True, text=True, timeout=1800)
+
+def triage(skill, trigger):
+    """Spawn a sealed triage session; returns the verdict frontmatter or None."""
+    if not which("claude"):
+        log(f"triage {skill}: SKIPPED — no `claude` CLI on PATH")
+        return None
+    if not os.path.exists(os.path.join(ROOT, triage_lib.PROMPT_FILE)):
+        log(f"triage {skill}: SKIPPED — {triage_lib.PROMPT_FILE} is missing")
+        return None
+    log(f"triage {skill}: classifying — {trigger}")
+    run_triage_session(skill, trigger, triage_lib.evidence_for(ROOT, skill),
+                       os.path.join("skills", skill, triage_lib.VERDICT_FILE))
+    verdict = triage_lib.read_verdict(ROOT, skill)
+    if not verdict:
+        log(f"triage {skill}: no verdict written — leaving the failure for a human")
+        return None
+    phase = triage_lib.calibration_phase(ROOT)
+    log(f"triage {skill}: class={verdict.get('class')} action={verdict.get('action')} "
+        f"confidence={verdict.get('confidence')} (calibration phase {phase})")
+    return verdict
+
+def triage_failure(skill, outcome):
+    """Trigger points 1-3. Returns True if the conductor should retry the skill."""
+    trigger = TRIAGE_TRIGGERS.get(outcome)
+    if not trigger:
+        return False
+    verdict = triage(skill, trigger)
+    return bool(verdict) and apply_verdict(skill, verdict)
+
+def triage_tick_error(error):
+    """Trigger point 4 — the same exception three ticks running."""
+    if not which("claude") or not os.path.exists(os.path.join(ROOT, triage_lib.PROMPT_FILE)):
+        log("triage tick: SKIPPED — no `claude` CLI on PATH or no triage prompt")
+        return
+    log(f"triage tick: classifying repeated tick error — {error}")
+    evidence = [p for p in (os.path.join("analysis", "conductor.log"),
+                            os.path.join("analysis", "facts.yaml"))
+                if os.path.exists(os.path.join(ROOT, p))]
+    run_triage_session("(conductor tick)", f"tick() raised the same error {TICK_ERROR_TRIGGER_THRESHOLD} "
+                       f"ticks running: {error}", evidence, triage_lib.TICK_VERDICT_FILE)
+
 def tick():
     held = lock_holder()
     if held:
@@ -378,12 +469,18 @@ if __name__ == "__main__":
     if "--interval" in sys.argv:
         interval = int(sys.argv[sys.argv.index("--interval") + 1])
     log("conductor started" + (" (single tick)" if once else f" (every {interval}s)"))
+    last_error, repeats = None, 0
     try:
         while True:
             try:
                 tick()
+                last_error, repeats = None, 0
             except Exception as e:
                 log(f"ERROR: {e}")
+                repeats = repeats + 1 if str(e) == last_error else 1
+                last_error = str(e)
+                if repeats == TICK_ERROR_TRIGGER_THRESHOLD:
+                    triage_tick_error(last_error)
             if once:
                 break
             time.sleep(interval)
