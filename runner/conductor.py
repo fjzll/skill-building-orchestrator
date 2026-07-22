@@ -32,7 +32,8 @@ loop still functions.
 Usage: python3 runner/conductor.py [--once] [--interval N]
 Log:   analysis/conductor.log
 """
-import sys, os, glob, json, time, subprocess
+import sys, os, glob, json, time, subprocess, threading
+from concurrent.futures import ThreadPoolExecutor
 from shutil import which
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -48,13 +49,20 @@ LOCK = os.path.join(ROOT, "analysis", ".conductor-lock")
 
 BUILD_ATTEMPT_CAP = 3
 LOCK_STALE_SECONDS = 10 * 60
+# Independent skills build concurrently, bounded to respect API rate limits.
+# Threads, not processes: the isolation that matters is the builder subprocess,
+# which is already a fresh process per skill. Everything shared here is a file.
+MAX_PARALLEL_BUILDS = 3
+
+_log_lock = threading.Lock()
 
 def log(msg):
     line = f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {msg}"
-    print(line, flush=True)
-    os.makedirs(os.path.dirname(LOG), exist_ok=True)
-    with open(LOG, "a") as f:
-        f.write(line + "\n")
+    with _log_lock:
+        print(line, flush=True)
+        os.makedirs(os.path.dirname(LOG), exist_ok=True)
+        with open(LOG, "a") as f:
+            f.write(line + "\n")
 
 def skills_of(meta):
     raw = meta.get("skills", [])
@@ -347,22 +355,65 @@ def confirm_proposal(path, meta):
     log(f"{name}: confirmed -> building ({len(names)} skills, eval_hash {frozen[:12]})")
     return "building"
 
-def advance_proposal(path, meta):
+def shared_dependencies(content, skills):
+    """Read the shared-dep edges out of the proposal body.
+
+    The TEMPLATE gives each skill a `### <name>` section with a
+    `**Shared dependencies:**` line. That line is the dependency graph — the
+    "shared deps first" convention made explicit instead of relying on list order.
+    """
+    edges = {s: set() for s in skills}
+    current = None
+    for line in content.splitlines():
+        heading = line.strip()
+        if heading.startswith("###"):
+            named = heading.lstrip("#").strip()
+            current = named if named in skills else None
+        elif current and "shared dependencies:" in line.lower():
+            listed = line.split(":", 1)[1]
+            edges[current] |= {s for s in skills if s != current and s in listed}
+    return edges
+
+def build_levels(skills, edges):
+    """Group skills into dependency levels; everything in a level is independent."""
+    levels, placed = [], set()
+    remaining = list(skills)
+    while remaining:
+        level = [s for s in remaining if edges.get(s, set()) <= placed]
+        if not level:  # a cycle, or a dep outside the proposal — fall back to order
+            level = [remaining[0]]
+        levels.append(level)
+        placed |= set(level)
+        remaining = [s for s in remaining if s not in placed]
+    return levels
+
+def converge_with_triage(skill, names, expected_hash):
+    outcome = converge_skill(skill, names, expected_hash)
+    if outcome in TRIAGE_TRIGGERS and triage_failure(skill, outcome):
+        # The verdict's class has earned autonomy: one more bounded run.
+        outcome = converge_skill(skill, names, expected_hash)
+    return outcome
+
+def advance_proposal(path, meta, content=""):
     name = os.path.basename(path)
     names = skills_of(meta)
     if not names:
         log(f"{name}: no skills listed in frontmatter — waiting")
         return
     expected_hash = meta.get("eval_hash")
+    levels = build_levels(names, shared_dependencies(content, names))
     outcomes = []
-    for skill in names:  # proposal lists shared deps first by convention
-        outcome = converge_skill(skill, names, expected_hash)
-        if outcome in TRIAGE_TRIGGERS and triage_failure(skill, outcome):
-            # The verdict's class has earned autonomy: one more bounded run.
-            outcome = converge_skill(skill, names, expected_hash)
-        outcomes.append(outcome)
-        # Later skills build on the earlier ones; stop rather than build on sand.
-        if outcome in TERMINAL_NAMES:
+    for level in levels:
+        if len(level) == 1:
+            outcomes.append(converge_with_triage(level[0], names, expected_hash))
+        else:
+            log(f"{name}: building {len(level)} independent skills in parallel: {', '.join(level)}")
+            with ThreadPoolExecutor(max_workers=min(MAX_PARALLEL_BUILDS, len(level))) as pool:
+                futures = {s: pool.submit(converge_with_triage, s, names, expected_hash)
+                           for s in level}
+                outcomes += [futures[s].result() for s in level]
+        # Later levels build on the earlier ones; stop rather than build on sand.
+        if any(o in TERMINAL_NAMES for o in outcomes):
             break
     for outcome, status in TERMINAL_OUTCOMES:
         if outcome in outcomes:
@@ -378,12 +429,12 @@ def stage_proposals():
     for p in sorted(glob.glob(os.path.join(ROOT, "proposals", "*.md"))):
         if os.path.basename(p) == "TEMPLATE.md":
             continue
-        meta, _ = read_fm(p)
+        meta, content = read_fm(p)
         status = meta.get("status", "")
         if status == "confirmed":
             status = confirm_proposal(p, meta)
         if status == "building":
-            advance_proposal(p, meta)
+            advance_proposal(p, meta, content)
 
 # ---------- triage (LLM at failure points only) ----------
 # Which outcome triggers a triage session, and the trigger name recorded in the

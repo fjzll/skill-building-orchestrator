@@ -4,6 +4,8 @@
 #   ./orch up       start the portal + conductor (your normal "on" switch)
 #   ./orch grill    start the NEXT grill session (interactive, seeded)
 #   ./orch status   pipeline state
+#   ./orch doctor   what is stuck, and can this machine run a build
+#   ./orch retrospect  per-repo report from artifacts on disk -> analysis/retrospect.md
 #   ./orch facts    force the facts pass (conductor also does this automatically)
 #   ./orch daemon   run the conductor in the foreground
 set -e
@@ -57,10 +59,12 @@ EOF
     fi
     exec claude "$(sed "s/{SUBJECT}/$SUBJECT/" docs/grill-seed.txt)"
     ;;
-  facts)   python3 runner/facts_extractor.py . ;;
-  daemon)  exec python3 runner/conductor.py "${@:2}" ;;
-  status)  python3 runner/runner.py status; echo; python3 runner/runner.py next ;;
-  build)   python3 runner/runner.py build "$2" ;;
-  test)    python3 runner/runner.py test "$2" ;;
-  *) echo "usage: ./orch [init <slug> \"<Name>\"|up|down|grill|status|facts|daemon|build <skill>|test <skill>]" ;;
+  facts)      python3 runner/facts_extractor.py . ;;
+  daemon)     exec python3 runner/conductor.py "${@:2}" ;;
+  status)     python3 runner/runner.py status; echo; python3 runner/runner.py next ;;
+  doctor)     exec python3 runner/doctor.py . ;;
+  retrospect) exec python3 runner/retrospect.py . ;;
+  build)      python3 runner/runner.py build "$2" ;;
+  test)       python3 runner/runner.py test "$2" ;;
+  *) echo "usage: ./orch [init <slug> \"<Name>\"|up|down|grill|status|doctor|retrospect|facts|daemon|build <skill>|test <skill>]" ;;
 esac
