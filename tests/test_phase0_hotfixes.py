@@ -8,10 +8,14 @@ from conductor_fixture import ConductorTestCase, FakeRun
 
 import conductor
 
+# Every build now requires a confirmed suite (Phase 1.0); these tests are about
+# what happens after that gate is satisfied.
+EVAL_YAML = "output: output.md\nlayer1:\n  required_fields: [cash]\n"
+
 
 class RetryBudget(ConductorTestCase):
     def test_a_failing_build_stops_at_the_cap(self):
-        self.skill_dir("demo-skill", {"BUILD_BRIEF.md": "build it"})
+        self.skill_dir("demo-skill", {"BUILD_BRIEF.md": "build it", "eval/eval.yaml": EVAL_YAML})
         self.patch_run(FakeRun(returncode=1))  # build never produces SKILL.md
         path = self.proposal()
 
@@ -23,7 +27,7 @@ class RetryBudget(ConductorTestCase):
         self.assertIn("demo-skill", self.log_text())
 
     def test_a_successful_build_clears_the_counter(self):
-        sdir = self.skill_dir("demo-skill", {"BUILD_BRIEF.md": "build it"})
+        sdir = self.skill_dir("demo-skill", {"BUILD_BRIEF.md": "build it", "eval/eval.yaml": EVAL_YAML})
         conductor.record_attempt("demo-skill")
 
         def build(cmd, kwargs):
@@ -40,6 +44,7 @@ class ChangeRequestGuard(ConductorTestCase):
     def test_a_change_request_is_never_rebuilt(self):
         self.skill_dir("demo-skill", {
             "BUILD_BRIEF.md": "build it",
+            "eval/eval.yaml": EVAL_YAML,
             "CHANGE_REQUEST.md": "the contract's output shape is impossible",
         })
         run = self.patch_run(FakeRun(returncode=0))
@@ -52,7 +57,7 @@ class ChangeRequestGuard(ConductorTestCase):
         self.assertEqual(run.calls, [], "no build subprocess should have been launched")
 
     def test_a_builder_raising_mid_build_is_caught(self):
-        sdir = self.skill_dir("demo-skill", {"BUILD_BRIEF.md": "build it"})
+        sdir = self.skill_dir("demo-skill", {"BUILD_BRIEF.md": "build it", "eval/eval.yaml": EVAL_YAML})
 
         def build(cmd, kwargs):
             with open(os.path.join(sdir, "CHANGE_REQUEST.md"), "w") as f:
@@ -79,7 +84,7 @@ class ConductorLock(ConductorTestCase):
     def test_a_second_conductor_no_ops(self):
         with open(conductor.LOCK, "w") as f:
             json.dump({"pid": os.getpid() + 90000, "timestamp": time.time()}, f)
-        self.skill_dir("demo-skill", {"BUILD_BRIEF.md": "build it"})
+        self.skill_dir("demo-skill", {"BUILD_BRIEF.md": "build it", "eval/eval.yaml": EVAL_YAML})
         run = self.patch_run(FakeRun(returncode=0))
         path = self.proposal()
 

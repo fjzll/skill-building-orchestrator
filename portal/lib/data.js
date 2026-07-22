@@ -26,6 +26,31 @@ export function getLedger() {
   }));
 }
 
+export function skillsOf(meta) {
+  const raw = meta?.skills ?? "";
+  return String(raw).replace(/^\[|\]$/g, "").split(",").map(s => s.trim()).filter(Boolean);
+}
+
+// The executable half of the contract. Rendered inline on the proposal so that
+// one Confirm approves the prose test definition AND the suite that enforces it.
+export function getEvalSuite(skill) {
+  const dir = path.join(ROOT, "skills", skill);
+  const configPath = path.join(dir, "eval", "eval.yaml");
+  const fixturesDir = path.join(dir, "fixtures");
+  let fixtures = [];
+  if (fs.existsSync(fixturesDir)) {
+    fixtures = fs.readdirSync(fixturesDir, { withFileTypes: true })
+      .filter(e => e.isFile())
+      .map(e => e.name)
+      .sort();
+  }
+  return {
+    skill,
+    config: fs.existsSync(configPath) ? fs.readFileSync(configPath, "utf8") : null,
+    fixtures,
+  };
+}
+
 export function getProposals() {
   const dir = path.join(ROOT, "proposals");
   if (!fs.existsSync(dir)) return [];
@@ -40,7 +65,7 @@ export function getProposals() {
         const i = line.indexOf(":");
         if (i > 0) meta[line.slice(0, i).trim()] = line.slice(i + 1).split("#")[0].trim();
       }
-      return { name: f, meta, content };
+      return { name: f, meta, content, suites: skillsOf(meta).map(getEvalSuite) };
     });
 }
 

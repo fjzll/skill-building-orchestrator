@@ -19,6 +19,7 @@ const BLOCKER_STATUS_CHIP = { open: "amber", resolved: "green", superseded: "gre
 const STATUS_CHIP = {
   proposed: "amber", "changes-requested": "red", revised: "amber",
   confirmed: "purple", building: "amber", tested: "green",
+  "build-failed": "red", blocked: "red",
 };
 
 function Hero({ sub }) {
@@ -89,6 +90,31 @@ function Overview() {
   );
 }
 
+// Confirming a proposal approves its executable test suite too, so the suite has
+// to be visible at the point of decision — not just the prose that describes it.
+function EvalSuites({ suites, frozen }) {
+  if (suites.length === 0) return null;
+  return (
+    <div className="callout">
+      <b>Executable test suite</b> — Confirm approves these files as well as the prose above.
+      {frozen
+        ? <span className="chip green" style={{ marginLeft: 8 }}>frozen at {frozen.slice(0, 12)}</span>
+        : <span className="chip amber" style={{ marginLeft: 8 }}>freezes on confirm</span>}
+      {suites.map(s => (
+        <div key={s.skill} style={{ marginTop: 10 }}>
+          <b>{s.skill}</b>{" "}
+          {s.config
+            ? <span className="chip green">eval/eval.yaml</span>
+            : <span className="chip red">eval/eval.yaml missing — cannot build</span>}{" "}
+          <span className="chip grey">{s.fixtures.length} fixture{s.fixtures.length === 1 ? "" : "s"}</span>
+          {s.config && <pre className="md">{s.config}</pre>}
+          {s.fixtures.length > 0 && <p className="muted">fixtures: {s.fixtures.join(", ")}</p>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function Proposals() {
   const proposals = getProposals();
   return (
@@ -104,6 +130,7 @@ function Proposals() {
           <h2>{p.name} <span className={"chip " + (STATUS_CHIP[p.meta.status] || "grey")}>{p.meta.status}</span>{" "}
             <span className="chip grey">v{p.meta.version || "1"}</span></h2>
           <pre className="md">{p.content.replace(/^---[\s\S]*?---\n/, "")}</pre>
+          <EvalSuites suites={p.suites} frozen={p.meta.eval_hash} />
           <ProposalActions file={p.name} status={p.meta.status} />
         </div>
       ))}

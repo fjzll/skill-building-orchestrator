@@ -27,7 +27,10 @@ status: approved
    become structural change requests.
 7. **Eval gates**: Layer 1 (deterministic) and Layer 2 (fact grounding) at 100%;
    Layer 3 (LLM judge rubric) threshold per proposal. Judge is calibrated
-   against human verdicts before it gates alone.
+   against human verdicts before it gates alone. The executable suite
+   (`eval/eval.yaml` + fixtures) is written by the grill session, confirmed
+   together with the proposal, and hash-frozen at that confirmation — the
+   builder receives it as read-only context and can never author or amend it.
 8. **Cross-cutting client rules** — client-specific, fill in at bootstrap grill
    (for example: required human approvals, voice or brand constraints, systems
    of record, and access controls).

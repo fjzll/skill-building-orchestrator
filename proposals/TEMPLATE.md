@@ -34,6 +34,12 @@ The portal Blockers tab aggregates these rows across all proposals.
 |---|---|---|---|---|
 
 ## Test definition
+
+Written and committed at grill exit as `skills/<skill>/eval/eval.yaml` plus its
+fixtures — the portal renders those files inline here, and Confirm approves them
+along with this prose. The conductor freezes their hash into `eval_hash` on
+confirmation; no build or refine attempt may change them afterwards.
+
 - Fixtures:
 - Layer 1 checks:
 - Layer 2 number sources:

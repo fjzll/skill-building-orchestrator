@@ -31,6 +31,7 @@ from shutil import which
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from client_config import require_client_config
 from fm import read_fm, set_fm
+from eval_suite import config_path, skills_missing_suite, suite_hash
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOG = os.path.join(ROOT, "analysis", "conductor.log")
@@ -128,11 +129,15 @@ def stage_facts():
             open(STAMP, "w").write(str(time.time()))
 
 def build_skill(skill):
-    """Returns built | change-request | retry | exhausted | skipped."""
+    """Returns built | change-request | blocked | retry | exhausted | skipped."""
     sdir = os.path.join(ROOT, "skills", skill)
     if os.path.exists(os.path.join(sdir, "CHANGE_REQUEST.md")):
         log(f"build {skill}: CHANGE_REQUEST.md present — contract problem, not rebuilding")
         return "change-request"
+    if not os.path.exists(config_path(ROOT, skill)):
+        # The builder must not author its own exam: no confirmed suite, no build.
+        log(f"build {skill}: BLOCKED — no confirmed eval/eval.yaml to build against")
+        return "blocked"
     if os.path.exists(os.path.join(sdir, "SKILL.md")):
         clear_attempts(skill)
         log(f"build {skill}: already built")
@@ -189,6 +194,25 @@ TERMINAL_OUTCOMES = [
 ]
 TERMINAL_NAMES = [outcome for outcome, _ in TERMINAL_OUTCOMES]
 
+def confirm_proposal(path, meta):
+    """Freeze the confirmed test suite, then open the proposal for building.
+
+    The hash is taken here, before the first build attempt, so tampering on any
+    attempt is caught — not just tampering inside the refine loop.
+    """
+    name = os.path.basename(path)
+    names = skills_of(meta)
+    missing = skills_missing_suite(ROOT, names)
+    if missing:
+        set_fm(path, "status", "blocked")
+        log(f"{name}: BLOCKED — no confirmed eval/eval.yaml for: {', '.join(missing)}")
+        return "blocked"
+    frozen = suite_hash(ROOT, names)
+    set_fm(path, "eval_hash", frozen)
+    set_fm(path, "status", "building")
+    log(f"{name}: confirmed -> building ({len(names)} skills, eval_hash {frozen[:12]})")
+    return "building"
+
 def advance_proposal(path, meta):
     name = os.path.basename(path)
     names = skills_of(meta)
@@ -219,9 +243,7 @@ def stage_proposals():
         meta, _ = read_fm(p)
         status = meta.get("status", "")
         if status == "confirmed":
-            log(f"{os.path.basename(p)}: confirmed -> building ({len(skills_of(meta))} skills)")
-            set_fm(p, "status", "building")
-            status = "building"
+            status = confirm_proposal(p, meta)
         if status == "building":
             advance_proposal(p, meta)
 

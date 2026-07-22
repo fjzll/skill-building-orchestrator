@@ -22,9 +22,22 @@ Start a fresh Claude session (Cowork or Claude Code) with the grill-me skill and
    options considered and turned down, with reasons; see ledger 000) and
    update/create the workflow's proposal from TEMPLATE.md.
    Human approval of the ledger entry is the exit gate.
+6. Exit act, continued — **write the executable test suite**: one
+   `skills/<skill>/eval/eval.yaml` per skill in the proposal, plus the fixture
+   files it references under `skills/<skill>/fixtures/`. This is not optional
+   and it is not the builder's job: the author of a skill must not write its
+   own exam. Fixtures you cannot produce become Information Request items in
+   the proposal's Blockers table under the existing proceed-under-assumption
+   rule — but eval.yaml itself must exist, or the conductor blocks the
+   proposal rather than building it.
 
 ## After all sessions
-Proposals sit at `status: proposed` awaiting review (PR or portal).
+Proposals sit at `status: proposed` awaiting review (PR or portal). The portal
+renders each skill's `eval.yaml` and fixture list inline under the proposal:
+one Confirm approves the contract prose and the executable suite together, and
+the conductor records an `eval_hash` over that suite as it opens the build.
+Every build and refine attempt is checked against that hash — which is what
+makes "never weaken a test to pass it" mechanical rather than a prompt.
 Cosmetic change → direct edit + ledger addendum. Structural change → targeted
 re-grill seeded with ledger + the specific comment. Any change bumps version and
 resets confirmation. Shared-skill changes flag dependent proposals stale.
