@@ -178,14 +178,23 @@ def build_skill(skill):
 
     attempt = record_attempt(skill)
     log(f"build {skill}: launching headless build (attempt {attempt}/{BUILD_ATTEMPT_CAP})")
-    r = subprocess.run(
-        ["claude", "-p",
-         BUILD_LOG_PREAMBLE +
-         "Read BUILD_BRIEF.md in this directory and build the skill exactly per the brief. "
-         "Create SKILL.md and any scripts. Do not change the contract; if the boundaries do not "
-         "work, write CHANGE_REQUEST.md and stop.",
-         "--output-format", "json"],
-        cwd=sdir, capture_output=True, text=True, timeout=3600)
+    try:
+        r = subprocess.run(
+            ["claude", "-p",
+             BUILD_LOG_PREAMBLE +
+             "Read BUILD_BRIEF.md in this directory and build the skill exactly per the brief. "
+             "Create SKILL.md and any scripts. Do not change the contract; if the boundaries do not "
+             "work, write CHANGE_REQUEST.md and stop.",
+             "--output-format", "json"],
+            cwd=sdir, capture_output=True, text=True, timeout=3600)
+    except subprocess.TimeoutExpired:
+        # A hung build is a failed attempt for this skill, not a tick-level
+        # crash: the attempt is already counted, so the budget still binds.
+        if attempt >= BUILD_ATTEMPT_CAP:
+            log(f"build {skill}: TIMED OUT on final attempt {attempt}/{BUILD_ATTEMPT_CAP}")
+            return "exhausted"
+        log(f"build {skill}: TIMED OUT (attempt {attempt}/{BUILD_ATTEMPT_CAP}) — retrying next tick")
+        return "retry"
     if os.path.exists(os.path.join(sdir, "CHANGE_REQUEST.md")):
         log(f"build {skill}: builder raised a change request")
         return "change-request"
@@ -212,6 +221,26 @@ def test_skill(skill):
     return "pass" if r.returncode == 0 else "fail"
 
 # ---------- convergence loop ----------
+def pass_marker_file(skill):
+    return os.path.join(ROOT, "skills", skill, ".gate-passed")
+
+def record_gate_pass(skill, expected_hash):
+    """Stamp the pass with the frozen suite hash, so a pass against an old
+    suite can never satisfy a re-confirmed proposal."""
+    with open(pass_marker_file(skill), "w") as f:
+        f.write(expected_hash or "none")
+
+def gate_already_passed(skill, expected_hash):
+    try:
+        with open(pass_marker_file(skill)) as f:
+            return f.read().strip() == (expected_hash or "none")
+    except OSError:
+        return False
+
+def clear_gate_pass(skill):
+    if os.path.exists(pass_marker_file(skill)):
+        os.unlink(pass_marker_file(skill))
+
 def scorecard(skill):
     try:
         with open(os.path.join(ROOT, "skills", skill, "eval", "scorecard.json")) as f:
@@ -270,17 +299,21 @@ def refine_skill(skill, failing):
         return "skipped"
     attempt = record_attempt(skill)
     log(f"refine {skill}: attempt {attempt}/{BUILD_ATTEMPT_CAP} against {len(failing)} failing check(s)")
-    subprocess.run(
-        ["claude", "-p",
-         BUILD_LOG_PREAMBLE +
-         "The eval gate for this skill failed. Read BUILD_BRIEF.md and eval/scorecard.json in this "
-         "directory, then fix the skill and its output so these checks pass:\n"
-         + "\n".join(f"- {c}" for c in failing)
-         + "\neval/eval.yaml and everything under fixtures/ are read-only context — the test suite "
-           "was confirmed with the contract and must not be edited. If the failing checks cannot be "
-           "satisfied within the contract, write CHANGE_REQUEST.md and stop.",
-         "--output-format", "json"],
-        cwd=sdir, capture_output=True, text=True, timeout=3600)
+    try:
+        subprocess.run(
+            ["claude", "-p",
+             BUILD_LOG_PREAMBLE +
+             "The eval gate for this skill failed. Read BUILD_BRIEF.md and eval/scorecard.json in this "
+             "directory, then fix the skill and its output so these checks pass:\n"
+             + "\n".join(f"- {c}" for c in failing)
+             + "\neval/eval.yaml and everything under fixtures/ are read-only context — the test suite "
+               "was confirmed with the contract and must not be edited. If the failing checks cannot be "
+               "satisfied within the contract, write CHANGE_REQUEST.md and stop.",
+             "--output-format", "json"],
+            cwd=sdir, capture_output=True, text=True, timeout=3600)
+    except subprocess.TimeoutExpired:
+        log(f"refine {skill}: TIMED OUT (attempt {attempt}/{BUILD_ATTEMPT_CAP})")
+        return "timeout"  # converge maps any non-refined outcome to a next-tick retry
     if os.path.exists(os.path.join(sdir, "CHANGE_REQUEST.md")):
         log(f"refine {skill}: builder raised a change request")
         return "change-request"
@@ -293,22 +326,30 @@ def converge_skill(skill, proposal_skills, expected_hash):
     fresh sealed subprocess. The suite is re-hashed before and after every
     attempt, so 'never weaken a test to pass it' is enforced mechanically.
     """
-    evaluation = 0
     while True:
         if suite_tampered(proposal_skills, expected_hash):
             log(f"{skill}: TAMPERED — the confirmed test suite changed since it was frozen")
             return "tampered"
+        # A skill that already passed this frozen suite is done. Without this,
+        # every tick spent waiting on a sibling re-runs the full harness —
+        # including the layer 3 judge's API calls — against an unchanged skill.
+        if (os.path.exists(os.path.join(ROOT, "skills", skill, "SKILL.md"))
+                and gate_already_passed(skill, expected_hash)):
+            return "pass"
         built = build_skill(skill)
         if built != "built":
             return built
         result = test_skill(skill)
-        evaluation += 1
-        archive_attempt(skill, evaluation)
+        # Archive under the budget index, which survives across ticks; a local
+        # counter would restart at 1 every invocation and overwrite the history
+        # triage and retrospect read.
+        archive_attempt(skill, attempts_used(skill) or 1)
         if suite_tampered(proposal_skills, expected_hash):
             log(f"{skill}: TAMPERED — the test suite changed during the attempt")
             return "tampered"
         if result == "pass":
             clear_attempts(skill)
+            record_gate_pass(skill, expected_hash)
             return "pass"
         if result != "fail":
             return result
@@ -347,8 +388,9 @@ def confirm_proposal(path, meta):
         log(f"{name}: BLOCKED — no confirmed eval/eval.yaml for: {', '.join(missing)}")
         return "blocked"
     frozen = suite_hash(ROOT, names)
-    for skill in names:  # budget and auto-retry allowance are per proposal version
+    for skill in names:  # budget, auto-retry allowance, and gate passes are per proposal version
         clear_attempts(skill)
+        clear_gate_pass(skill)
         if os.path.exists(triage_applied_file(skill)):
             os.unlink(triage_applied_file(skill))
     set_fm(path, "eval_hash", frozen)
@@ -483,8 +525,13 @@ def apply_verdict(skill, verdict):
 def run_triage_session(subject, trigger, evidence, output_relpath):
     """One sealed triage subprocess. Writes a verdict file; changes nothing else."""
     prompt = triage_lib.build_prompt(ROOT, subject, trigger, evidence, output_relpath)
-    subprocess.run(["claude", "-p", prompt, "--output-format", "json"],
-                   cwd=ROOT, capture_output=True, text=True, timeout=1800)
+    try:
+        subprocess.run(["claude", "-p", prompt, "--output-format", "json"],
+                       cwd=ROOT, capture_output=True, text=True, timeout=1800)
+    except subprocess.TimeoutExpired:
+        # No verdict is a valid triage outcome: the caller falls through to the
+        # human path, which is exactly where an unclassifiable failure belongs.
+        log(f"triage {subject}: TIMED OUT — no verdict written")
 
 def triage(skill, trigger):
     """Spawn a sealed triage session; returns the verdict frontmatter or None."""

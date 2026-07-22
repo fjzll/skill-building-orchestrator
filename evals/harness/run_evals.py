@@ -22,7 +22,7 @@ Per-skill config: skills/<skill>/eval/eval.yaml
     threshold_avg: 4.25   # of 5  (== 85%)
     floor: 3
     runs: 3
-    model: claude-sonnet-5        # optional; JUDGE_MODEL default
+    model: claude-sonnet-4-6      # optional; JUDGE_MODEL default
 Gate policy: layers 1-2 at 100%; layer 3 avg >= threshold_avg and min >= floor.
 """
 import sys, os, json, re
@@ -31,7 +31,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 
 # Judge model. Per-skill override: eval.yaml layer3.model — so a model change is
 # config, not a code edit.
-JUDGE_MODEL = "claude-sonnet-5"
+JUDGE_MODEL = "claude-sonnet-4-6"
 
 NUM_RE = re.compile(r"(?<![\d.])(\d{1,3}(?:,\d{3})+|\d+\.\d+|\d+)(?!\d)")
 

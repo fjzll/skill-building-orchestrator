@@ -1,0 +1,373 @@
+From a06b78d3477aec1c0fa8318ad0708e2fca308854 Mon Sep 17 00:00:00 2001
+From: patch <patch@local>
+Date: Wed, 22 Jul 2026 05:54:48 +0000
+Subject: [PATCH] follow-up fixes 1-5 from audit
+
+---
+ docs/grill-seed.txt          |   7 +-
+ evals/harness/run_evals.py   |   4 +-
+ runner/conductor.py          |  97 ++++++++++++++++------
+ tests/test_followup_fixes.py | 157 +++++++++++++++++++++++++++++++++++
+ 4 files changed, 237 insertions(+), 28 deletions(-)
+ create mode 100644 tests/test_followup_fixes.py
+
+diff --git a/docs/grill-seed.txt b/docs/grill-seed.txt
+index d2d5b82..31a2ca0 100644
+--- a/docs/grill-seed.txt
++++ b/docs/grill-seed.txt
+@@ -10,4 +10,9 @@ Exit protocol: write the ledger entry (decisions, splits with the
+ <client>-<workflow>-<skill> naming, assumptions tagged to Information Requests,
+ conventions), get my approval on it, then create/update the workflow's proposal
+ from proposals/TEMPLATE.md including the skills list in frontmatter
+-(shared deps first) and set status: proposed.
++(shared deps first) and set status: proposed. Then write the executable test
++suite for every skill in the proposal — skills/<skill>/eval/eval.yaml plus the
++fixture files it references — per grill-protocol rule 6. The builder must not
++author its own exam; fixtures you cannot produce become Information Request
++items in the Blockers table, but eval.yaml itself must exist or the conductor
++will block the proposal instead of building it.
+diff --git a/evals/harness/run_evals.py b/evals/harness/run_evals.py
+index 4aaf4ac..efd9068 100644
+--- a/evals/harness/run_evals.py
++++ b/evals/harness/run_evals.py
+@@ -22,7 +22,7 @@ Per-skill config: skills/<skill>/eval/eval.yaml
+     threshold_avg: 4.25   # of 5  (== 85%)
+     floor: 3
+     runs: 3
+-    model: claude-sonnet-5        # optional; JUDGE_MODEL default
++    model: claude-sonnet-4-6      # optional; JUDGE_MODEL default
+ Gate policy: layers 1-2 at 100%; layer 3 avg >= threshold_avg and min >= floor.
+ """
+ import sys, os, json, re
+@@ -31,7 +31,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
+ 
+ # Judge model. Per-skill override: eval.yaml layer3.model — so a model change is
+ # config, not a code edit.
+-JUDGE_MODEL = "claude-sonnet-5"
++JUDGE_MODEL = "claude-sonnet-4-6"
+ 
+ NUM_RE = re.compile(r"(?<![\d.])(\d{1,3}(?:,\d{3})+|\d+\.\d+|\d+)(?!\d)")
+ 
+diff --git a/runner/conductor.py b/runner/conductor.py
+index ea6d7d0..9d2eb7c 100644
+--- a/runner/conductor.py
++++ b/runner/conductor.py
+@@ -178,14 +178,23 @@ def build_skill(skill):
+ 
+     attempt = record_attempt(skill)
+     log(f"build {skill}: launching headless build (attempt {attempt}/{BUILD_ATTEMPT_CAP})")
+-    r = subprocess.run(
+-        ["claude", "-p",
+-         BUILD_LOG_PREAMBLE +
+-         "Read BUILD_BRIEF.md in this directory and build the skill exactly per the brief. "
+-         "Create SKILL.md and any scripts. Do not change the contract; if the boundaries do not "
+-         "work, write CHANGE_REQUEST.md and stop.",
+-         "--output-format", "json"],
+-        cwd=sdir, capture_output=True, text=True, timeout=3600)
++    try:
++        r = subprocess.run(
++            ["claude", "-p",
++             BUILD_LOG_PREAMBLE +
++             "Read BUILD_BRIEF.md in this directory and build the skill exactly per the brief. "
++             "Create SKILL.md and any scripts. Do not change the contract; if the boundaries do not "
++             "work, write CHANGE_REQUEST.md and stop.",
++             "--output-format", "json"],
++            cwd=sdir, capture_output=True, text=True, timeout=3600)
++    except subprocess.TimeoutExpired:
++        # A hung build is a failed attempt for this skill, not a tick-level
++        # crash: the attempt is already counted, so the budget still binds.
++        if attempt >= BUILD_ATTEMPT_CAP:
++            log(f"build {skill}: TIMED OUT on final attempt {attempt}/{BUILD_ATTEMPT_CAP}")
++            return "exhausted"
++        log(f"build {skill}: TIMED OUT (attempt {attempt}/{BUILD_ATTEMPT_CAP}) — retrying next tick")
++        return "retry"
+     if os.path.exists(os.path.join(sdir, "CHANGE_REQUEST.md")):
+         log(f"build {skill}: builder raised a change request")
+         return "change-request"
+@@ -212,6 +221,26 @@ def test_skill(skill):
+     return "pass" if r.returncode == 0 else "fail"
+ 
+ # ---------- convergence loop ----------
++def pass_marker_file(skill):
++    return os.path.join(ROOT, "skills", skill, ".gate-passed")
++
++def record_gate_pass(skill, expected_hash):
++    """Stamp the pass with the frozen suite hash, so a pass against an old
++    suite can never satisfy a re-confirmed proposal."""
++    with open(pass_marker_file(skill), "w") as f:
++        f.write(expected_hash or "none")
++
++def gate_already_passed(skill, expected_hash):
++    try:
++        with open(pass_marker_file(skill)) as f:
++            return f.read().strip() == (expected_hash or "none")
++    except OSError:
++        return False
++
++def clear_gate_pass(skill):
++    if os.path.exists(pass_marker_file(skill)):
++        os.unlink(pass_marker_file(skill))
++
+ def scorecard(skill):
+     try:
+         with open(os.path.join(ROOT, "skills", skill, "eval", "scorecard.json")) as f:
+@@ -270,17 +299,21 @@ def refine_skill(skill, failing):
+         return "skipped"
+     attempt = record_attempt(skill)
+     log(f"refine {skill}: attempt {attempt}/{BUILD_ATTEMPT_CAP} against {len(failing)} failing check(s)")
+-    subprocess.run(
+-        ["claude", "-p",
+-         BUILD_LOG_PREAMBLE +
+-         "The eval gate for this skill failed. Read BUILD_BRIEF.md and eval/scorecard.json in this "
+-         "directory, then fix the skill and its output so these checks pass:\n"
+-         + "\n".join(f"- {c}" for c in failing)
+-         + "\neval/eval.yaml and everything under fixtures/ are read-only context — the test suite "
+-           "was confirmed with the contract and must not be edited. If the failing checks cannot be "
+-           "satisfied within the contract, write CHANGE_REQUEST.md and stop.",
+-         "--output-format", "json"],
+-        cwd=sdir, capture_output=True, text=True, timeout=3600)
++    try:
++        subprocess.run(
++            ["claude", "-p",
++             BUILD_LOG_PREAMBLE +
++             "The eval gate for this skill failed. Read BUILD_BRIEF.md and eval/scorecard.json in this "
++             "directory, then fix the skill and its output so these checks pass:\n"
++             + "\n".join(f"- {c}" for c in failing)
++             + "\neval/eval.yaml and everything under fixtures/ are read-only context — the test suite "
++               "was confirmed with the contract and must not be edited. If the failing checks cannot be "
++               "satisfied within the contract, write CHANGE_REQUEST.md and stop.",
++             "--output-format", "json"],
++            cwd=sdir, capture_output=True, text=True, timeout=3600)
++    except subprocess.TimeoutExpired:
++        log(f"refine {skill}: TIMED OUT (attempt {attempt}/{BUILD_ATTEMPT_CAP})")
++        return "timeout"  # converge maps any non-refined outcome to a next-tick retry
+     if os.path.exists(os.path.join(sdir, "CHANGE_REQUEST.md")):
+         log(f"refine {skill}: builder raised a change request")
+         return "change-request"
+@@ -293,22 +326,30 @@ def converge_skill(skill, proposal_skills, expected_hash):
+     fresh sealed subprocess. The suite is re-hashed before and after every
+     attempt, so 'never weaken a test to pass it' is enforced mechanically.
+     """
+-    evaluation = 0
+     while True:
+         if suite_tampered(proposal_skills, expected_hash):
+             log(f"{skill}: TAMPERED — the confirmed test suite changed since it was frozen")
+             return "tampered"
++        # A skill that already passed this frozen suite is done. Without this,
++        # every tick spent waiting on a sibling re-runs the full harness —
++        # including the layer 3 judge's API calls — against an unchanged skill.
++        if (os.path.exists(os.path.join(ROOT, "skills", skill, "SKILL.md"))
++                and gate_already_passed(skill, expected_hash)):
++            return "pass"
+         built = build_skill(skill)
+         if built != "built":
+             return built
+         result = test_skill(skill)
+-        evaluation += 1
+-        archive_attempt(skill, evaluation)
++        # Archive under the budget index, which survives across ticks; a local
++        # counter would restart at 1 every invocation and overwrite the history
++        # triage and retrospect read.
++        archive_attempt(skill, attempts_used(skill) or 1)
+         if suite_tampered(proposal_skills, expected_hash):
+             log(f"{skill}: TAMPERED — the test suite changed during the attempt")
+             return "tampered"
+         if result == "pass":
+             clear_attempts(skill)
++            record_gate_pass(skill, expected_hash)
+             return "pass"
+         if result != "fail":
+             return result
+@@ -347,8 +388,9 @@ def confirm_proposal(path, meta):
+         log(f"{name}: BLOCKED — no confirmed eval/eval.yaml for: {', '.join(missing)}")
+         return "blocked"
+     frozen = suite_hash(ROOT, names)
+-    for skill in names:  # budget and auto-retry allowance are per proposal version
++    for skill in names:  # budget, auto-retry allowance, and gate passes are per proposal version
+         clear_attempts(skill)
++        clear_gate_pass(skill)
+         if os.path.exists(triage_applied_file(skill)):
+             os.unlink(triage_applied_file(skill))
+     set_fm(path, "eval_hash", frozen)
+@@ -483,8 +525,13 @@ def apply_verdict(skill, verdict):
+ def run_triage_session(subject, trigger, evidence, output_relpath):
+     """One sealed triage subprocess. Writes a verdict file; changes nothing else."""
+     prompt = triage_lib.build_prompt(ROOT, subject, trigger, evidence, output_relpath)
+-    subprocess.run(["claude", "-p", prompt, "--output-format", "json"],
+-                   cwd=ROOT, capture_output=True, text=True, timeout=1800)
++    try:
++        subprocess.run(["claude", "-p", prompt, "--output-format", "json"],
++                       cwd=ROOT, capture_output=True, text=True, timeout=1800)
++    except subprocess.TimeoutExpired:
++        # No verdict is a valid triage outcome: the caller falls through to the
++        # human path, which is exactly where an unclassifiable failure belongs.
++        log(f"triage {subject}: TIMED OUT — no verdict written")
+ 
+ def triage(skill, trigger):
+     """Spawn a sealed triage session; returns the verdict frontmatter or None."""
+diff --git a/tests/test_followup_fixes.py b/tests/test_followup_fixes.py
+new file mode 100644
+index 0000000..a5a2fee
+--- /dev/null
++++ b/tests/test_followup_fixes.py
+@@ -0,0 +1,157 @@
++"""Follow-up fixes after the plan audit: judge model, grill seed, timeouts,
++gate-pass short-circuit, and attempt-archive indexing."""
++import os
++import subprocess
++import unittest
++
++from conductor_fixture import ConductorTestCase, FakeRun
++
++import conductor
++
++REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
++
++EVAL_YAML = """fixtures: [fixtures/source.txt]
++output: output.md
++layer1:
++  required_fields: ["cash", "catalysts"]
++layer2:
++  number_sources: [fixtures/source.txt]
++"""
++SOURCE = "cash of 12.4m, three catalysts ahead\n"
++
++
++class JudgeModelIsValid(unittest.TestCase):
++    def test_the_default_is_not_the_known_bad_identifier(self):
++        harness = os.path.join(REPO, "evals", "harness", "run_evals.py")
++        with open(harness) as f:
++            body = f.read()
++        self.assertNotIn("claude-sonnet-5", body,
++                         "claude-sonnet-5 is not a valid API model identifier; "
++                         "the layer 3 judge 404s the first time it runs")
++
++
++class GrillSeedWritesTheSuite(unittest.TestCase):
++    def test_the_seed_exit_protocol_includes_the_executable_suite(self):
++        with open(os.path.join(REPO, "docs", "grill-seed.txt")) as f:
++            seed = f.read()
++        self.assertIn("eval/eval.yaml", seed,
++                      "the seed's enumerated exit protocol is what a session "
++                      "follows; if it omits the suite, every proposal blocks at confirm")
++
++
++class TimeoutsConsumeTheAttempt(ConductorTestCase):
++    def _timeout_fake(self):
++        def raise_timeout(cmd, kwargs):
++            raise subprocess.TimeoutExpired(cmd, kwargs.get("timeout", 0))
++        fake = FakeRun()
++        fake.on_call = raise_timeout
++        return self.patch_run(fake)
++
++    def test_a_hung_build_is_a_retry_not_a_tick_crash(self):
++        self.skill_dir("demo-skill", {"BUILD_BRIEF.md": "brief",
++                                      "eval/eval.yaml": EVAL_YAML})
++        self._timeout_fake()
++        outcome = conductor.build_skill("demo-skill")
++        self.assertEqual(outcome, "retry")
++        self.assertEqual(conductor.attempts_used("demo-skill"), 1)
++        self.assertIn("TIMED OUT", self.log_text())
++
++    def test_a_hung_build_on_the_final_attempt_exhausts_the_budget(self):
++        self.skill_dir("demo-skill", {"BUILD_BRIEF.md": "brief",
++                                      "eval/eval.yaml": EVAL_YAML})
++        for _ in range(conductor.BUILD_ATTEMPT_CAP - 1):
++            conductor.record_attempt("demo-skill")
++        self._timeout_fake()
++        self.assertEqual(conductor.build_skill("demo-skill"), "exhausted")
++
++    def test_a_hung_refine_maps_to_a_next_tick_retry(self):
++        self.skill_dir("demo-skill", {"BUILD_BRIEF.md": "brief"})
++        self._timeout_fake()
++        self.assertEqual(conductor.refine_skill("demo-skill", ["required: cash"]),
++                         "timeout")
++        self.assertEqual(conductor.attempts_used("demo-skill"), 1)
++
++    def test_a_hung_triage_leaves_the_failure_for_a_human(self):
++        os.makedirs(os.path.join(self.root, "docs"), exist_ok=True)
++        with open(os.path.join(self.root, "docs", "triage-prompt.md"), "w") as f:
++            f.write("{SKILL} {TRIGGER} {OUTPUT} {EVIDENCE}")
++        self.skill_dir("demo-skill", {"BUILD_BRIEF.md": "brief"})
++        self._timeout_fake()
++        verdict = conductor.triage("demo-skill", "build FAILED")
++        self.assertIsNone(verdict)
++        self.assertIn("TIMED OUT", self.log_text())
++
++
++class GatePassShortCircuit(ConductorTestCase):
++    def test_a_passed_skill_is_not_rebuilt_or_retested(self):
++        self.skill_dir("demo-skill", {"SKILL.md": "# skill",
++                                      "eval/eval.yaml": EVAL_YAML,
++                                      "fixtures/source.txt": SOURCE})
++        conductor.record_gate_pass("demo-skill", "frozenhash")
++        run = self.patch_run(FakeRun())
++        conductor.converge_skill("demo-skill", ["demo-skill"], None)
++        # The marker was stamped under a different hash, so it must not satisfy
++        # this proposal: the harness has to actually run again.
++        self.assertNotEqual(run.calls, [], "a stale marker must force a real re-test")
++
++        conductor.record_gate_pass("demo-skill", None)  # stamped for this version
++        run.calls.clear()
++        outcome = conductor.converge_skill("demo-skill", ["demo-skill"], None)
++        self.assertEqual(outcome, "pass")
++        self.assertEqual(run.calls, [], "no build, no harness, no judge calls")
++
++    def test_reconfirming_a_proposal_invalidates_the_old_pass(self):
++        self.skill_dir("demo-skill", {"SKILL.md": "# skill",
++                                      "eval/eval.yaml": EVAL_YAML,
++                                      "fixtures/source.txt": SOURCE})
++        conductor.record_gate_pass("demo-skill", "oldhash")
++        path = self.proposal(status="confirmed", skills=("demo-skill",))
++        from fm import read_fm
++        conductor.confirm_proposal(path, read_fm(path)[0])
++        self.assertFalse(os.path.exists(conductor.pass_marker_file("demo-skill")),
++                         "a new proposal version must re-earn its pass")
++
++
++class ArchiveIndexSurvivesTicks(ConductorTestCase):
++    def setUp(self):
++        super().setUp()
++        harness_dir = os.path.join(self.root, "evals", "harness")
++        os.makedirs(harness_dir)
++        with open(os.path.join(REPO, "evals", "harness", "run_evals.py")) as src:
++            body = src.read()
++        with open(os.path.join(harness_dir, "run_evals.py"), "w") as dst:
++            dst.write(body)
++
++    def test_each_attempt_keeps_its_own_scorecard(self):
++        sdir = self.skill_dir("demo-skill", {
++            "BUILD_BRIEF.md": "brief",
++            "eval/eval.yaml": EVAL_YAML,
++            "fixtures/source.txt": SOURCE,
++        })
++        real_run = subprocess.run
++
++        def claude_or_real(cmd, **kwargs):
++            if cmd[0] == "claude":
++                # Every build/refine "succeeds" but the output never satisfies
++                # layer 1, so the loop burns the whole budget.
++                with open(os.path.join(sdir, "SKILL.md"), "w") as f:
++                    f.write("# skill")
++                with open(os.path.join(sdir, "output.md"), "w") as f:
++                    f.write("cash of 12.4m\n")
++                return FakeRun.Result(0)
++            return real_run(cmd, **kwargs)
++
++        self._patch(conductor.subprocess, "run", claude_or_real)
++        from eval_suite import suite_hash
++        frozen = suite_hash(self.root, ["demo-skill"])
++        outcome = conductor.converge_skill("demo-skill", ["demo-skill"], frozen)
++        self.assertEqual(outcome, "exhausted")
++        archived = sorted(n for n in os.listdir(os.path.join(sdir, "eval"))
++                          if n.startswith("scorecard.attempt-"))
++        self.assertEqual(archived, [f"scorecard.attempt-{i}.json"
++                                    for i in range(1, conductor.BUILD_ATTEMPT_CAP + 1)],
++                         "one archive per budget attempt, none overwritten")
++
++
++if __name__ == "__main__":
++    unittest.main()
+-- 
+2.43.0
+
