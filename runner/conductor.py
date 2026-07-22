@@ -136,6 +136,14 @@ def stage_facts():
         if r.returncode == 0:
             open(STAMP, "w").write(str(time.time()))
 
+# Injected into every build and refine brief. A build is otherwise an opaque
+# up-to-an-hour subprocess, and triage has nothing to read but an exit code.
+BUILD_LOG_PREAMBLE = (
+    "As you work, append one line per significant action to BUILD_LOG.md in this directory: "
+    "timestamp, what you did, and which files you touched. Keep it terse — one line each, no "
+    "narration. It is the only record of what happened inside this run.\n\n"
+)
+
 def build_skill(skill):
     """Returns built | change-request | blocked | retry | exhausted | skipped."""
     sdir = os.path.join(ROOT, "skills", skill)
@@ -163,6 +171,7 @@ def build_skill(skill):
     log(f"build {skill}: launching headless build (attempt {attempt}/{BUILD_ATTEMPT_CAP})")
     r = subprocess.run(
         ["claude", "-p",
+         BUILD_LOG_PREAMBLE +
          "Read BUILD_BRIEF.md in this directory and build the skill exactly per the brief. "
          "Create SKILL.md and any scripts. Do not change the contract; if the boundaries do not "
          "work, write CHANGE_REQUEST.md and stop.",
@@ -201,15 +210,21 @@ def scorecard(skill):
     except (OSError, ValueError):
         return None
 
-def archive_scorecard(skill, attempt):
-    """Keep one scorecard per attempt — the paper trail for triage and retrospect."""
-    live = os.path.join(ROOT, "skills", skill, "eval", "scorecard.json")
-    if not os.path.exists(live):
-        return
-    with open(live) as f:
-        body = f.read()
-    with open(os.path.join(ROOT, "skills", skill, "eval", f"scorecard.attempt-{attempt}.json"), "w") as f:
-        f.write(body)
+def archive_attempt(skill, attempt):
+    """Keep the scorecard and build log per attempt — what triage and retrospect read."""
+    sdir = os.path.join(ROOT, "skills", skill)
+    for live, archived in (
+        (os.path.join(sdir, "eval", "scorecard.json"),
+         os.path.join(sdir, "eval", f"scorecard.attempt-{attempt}.json")),
+        (os.path.join(sdir, "BUILD_LOG.md"),
+         os.path.join(sdir, f"BUILD_LOG.attempt-{attempt}.md")),
+    ):
+        if not os.path.exists(live):
+            continue
+        with open(live) as f:
+            body = f.read()
+        with open(archived, "w") as f:
+            f.write(body)
 
 def failing_checks(skill):
     """The specific checks a refine attempt has to satisfy."""
@@ -248,6 +263,7 @@ def refine_skill(skill, failing):
     log(f"refine {skill}: attempt {attempt}/{BUILD_ATTEMPT_CAP} against {len(failing)} failing check(s)")
     subprocess.run(
         ["claude", "-p",
+         BUILD_LOG_PREAMBLE +
          "The eval gate for this skill failed. Read BUILD_BRIEF.md and eval/scorecard.json in this "
          "directory, then fix the skill and its output so these checks pass:\n"
          + "\n".join(f"- {c}" for c in failing)
@@ -278,7 +294,7 @@ def converge_skill(skill, proposal_skills, expected_hash):
             return built
         result = test_skill(skill)
         evaluation += 1
-        archive_scorecard(skill, evaluation)
+        archive_attempt(skill, evaluation)
         if suite_tampered(proposal_skills, expected_hash):
             log(f"{skill}: TAMPERED — the test suite changed during the attempt")
             return "tampered"
